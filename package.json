@@ -1,0 +1,27 @@
+{
+  "name": "tfg-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsc-watch --onSuccess \"node dist/index.js\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tanafc/tfg-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tanafc/tfg-backend/issues"
+  },
+  "homepage": "https://github.com/tanafc/tfg-backend#readme",
+  "devDependencies": {
+    "tsc-watch": "^6.0.0"
+  },
+  "dependencies": {
+    "mongodb": "^4.12.1",
+    "mongoose": "^6.8.4"
+  }
+}

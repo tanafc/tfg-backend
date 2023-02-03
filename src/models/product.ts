@@ -1,31 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { Schema, Types, model } from 'mongoose';
 
-
-/**
- * Interface for Updates
- */
-interface UpdateInterface {
-  price: number,
-  date: Date,
-  location: string,
-  user: string,
-}
-
-/**
- * Interface for Nutrients
- */
-interface NutrientsInterface {
-  energy: number,
-  totalFat: number,
-  saturatedFat: number,
-  totalCarbohydrates: number,
-  sugars: number,
-  protein: number,
-  salt: number,
-  sodium: number,
-  fibre: number,
-  perFruitVeg: number,
-}
 
 /**
  * Interface for Products
@@ -35,9 +9,10 @@ interface ProductInterface {
   name: string,
   brand: string,
   image: string,
-  record: UpdateInterface[],
+  record: Types.ObjectId[],
+  commerces: Types.ObjectId[],
   ingredients: string[],
-  nutrients: NutrientsInterface,
+  nutrients: Types.ObjectId,
   beverage: boolean,
   nutriScore: string,
 }
@@ -67,7 +42,14 @@ const ProductSchema = new Schema<ProductInterface>({
   },
   record: [
     {
-      type: {},
+      type: Schema.Types.ObjectId, ref: 'Update',
+      required: true
+    },
+  ],
+  commerces: [
+    {
+      type: Schema.Types.ObjectId, ref: 'Commerce',
+      required: true
     },
   ],
   ingredients: [
@@ -78,7 +60,8 @@ const ProductSchema = new Schema<ProductInterface>({
     },
   ],
   nutrients: {
-    type: {},
+    type: Schema.Types.ObjectId, ref: 'Nutrients',
+    required: true
   },
   beverage: {
     type: Boolean,
@@ -86,9 +69,7 @@ const ProductSchema = new Schema<ProductInterface>({
   },
   nutriScore: {
     type: String,
-    enum: [
-      'A', 'B', 'C', 'D', 'E'
-    ],
+    enum: ['A', 'B', 'C', 'D', 'E'],
     trim: true,
   }
 });

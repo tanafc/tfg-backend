@@ -1,7 +1,7 @@
 import * as express from 'express';
 import * as cors from 'cors';
-// import {defaultRouter} from './routers/default';
-// import {postRouter} from './routers/post';
+import { defaultRouter } from './routers/default';
+import { postRouter } from './routers/post';
 // import {getRouter} from './routers/get';
 // import {patchRouter} from './routers/patch';
 // import {deleteRouter} from './routers/delete';
@@ -13,10 +13,10 @@ app.use(cors({
 }));
 
 app.use(express.json());
-// app.use(postRouter);
+app.use(postRouter);
 // app.use(getRouter);
 // app.use(patchRouter);
 // app.use(deleteRouter);
-// app.use(defaultRouter);
+app.use(defaultRouter);
 
 export default app;

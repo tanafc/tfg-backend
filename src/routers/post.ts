@@ -26,7 +26,7 @@ postRouter.post('/signup', async (req, res) => {
     }
 
     let password = req.body.password.toString();
-    if (password === undefined || password.length !== 8) {
+    if (!password || password.length < 8) {
       res.status(400).send({
         error: 'A password of at least 8 characters is required',
       });
@@ -75,7 +75,7 @@ postRouter.post('/login', (req, res) => {
 
   const filter = { username: req.body.username.toString() };
   Account.findOne(filter).then(async (account) => {
-    if (account === null) {
+    if (!account) {
       res.status(404).send({
         error: "No account found",
       });
@@ -93,6 +93,7 @@ postRouter.post('/login', (req, res) => {
         id: account._id,
         username: account.username,
         email: account.email,
+        role: account.role,
         accessToken: accessToken,
       });
     }

@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "NODE_ENV=production tsc-watch --onSuccess \"node dist/index.js\""
+    "start": "NODE_ENV=production tsc-watch --onSuccess \"node dist/index.js\"",
+    "test": "NODE_ENV=test mocha --exit"
   },
   "repository": {
     "type": "git",
@@ -19,8 +20,15 @@
   "homepage": "https://github.com/tanafc/tfg-backend#readme",
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
+    "@types/chai": "^4.3.4",
     "@types/cors": "^2.8.12",
     "@types/jsonwebtoken": "^9.0.1",
+    "@types/mocha": "^10.0.1",
+    "@types/supertest": "^2.0.12",
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0",
+    "supertest": "^6.3.3",
+    "ts-node": "^10.9.1",
     "tsc-watch": "^6.0.0"
   },
   "dependencies": {

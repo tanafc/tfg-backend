@@ -1,11 +1,11 @@
 require('dotenv').config();
 
 import { Request, Response, NextFunction } from 'express';
-import { Secret, JwtPayload, verify, sign } from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 
 /** Interface for a request */
 export interface CustomRequest extends Request {
-  token: string | JwtPayload;
+  token: string | jwt.JwtPayload;
 }
 
 
@@ -13,7 +13,9 @@ export interface CustomRequest extends Request {
  * Function to generate JWT tokens
  */
 export function generateAccessToken(username: string) {
-  return sign(username, process.env.ACCESS_TOKEN_SECRET as string, {expiresIn: '2h'});
+  return jwt.sign({
+    username: username 
+  }, process.env.ACCESS_TOKEN_SECRET as string, { expiresIn: '2h' });
 }
 
 
@@ -23,14 +25,14 @@ export function generateAccessToken(username: string) {
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.header('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       throw new Error();
     }
-    
-    const decoded = verify(token, process.env.ACCESS_TOKEN_SECRET as Secret);
+
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as jwt.Secret);
     (req as CustomRequest).token = decoded;
- 
+
     next();
   } catch (err) {
     res.status(401).send('Please authenticate');

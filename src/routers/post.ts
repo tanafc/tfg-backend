@@ -88,7 +88,7 @@ postRouter.post('/login', (req, res) => {
         });
       }
 
-      const accessToken = jwt.generateAccessToken(account.username);
+      const accessToken = jwt.generateAccessToken(account.username, account.email);
       res.status(201).send({
         id: account._id,
         username: account.username,

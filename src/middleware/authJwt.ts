@@ -12,9 +12,10 @@ export interface CustomRequest extends Request {
 /**
  * Function to generate JWT tokens
  */
-export function generateAccessToken(username: string) {
+export function generateAccessToken(username: string, email: string) {
   return jwt.sign({
-    username: username 
+    username: username,
+    email: email 
   }, process.env.ACCESS_TOKEN_SECRET as string, { expiresIn: '2h' });
 }
 

@@ -1,13 +1,37 @@
 import { Schema, Types, model } from 'mongoose';
 
 /**
+ * Interface for the geolocation of shops
+ */
+interface Location { 
+  latitude: number,
+  longitude: number,
+  location: string 
+}
+
+/**
  * This interface is where the Account schema is based from
  */
 interface CommerceInterface {
   name: string,
   products: Types.ObjectId[],
-  locations: string[]
+  locations: Location[],
 }
+
+
+const LocationSchema = new Schema<Location>({
+  latitude: {
+    type: Number,
+    required: true,
+  },
+  longitude: {
+    type: Number,
+    required: true,
+  },
+  location: {
+    type: String,
+  }
+});
 
 
 const CommerceSchema = new Schema<CommerceInterface>({
@@ -20,12 +44,13 @@ const CommerceSchema = new Schema<CommerceInterface>({
   products: [
     {
       type: Schema.Types.ObjectId, ref: 'Product',
+      default: {}
     },
   ],
   locations: [
     {
-      type: String,
-      trim: true,
+      type: LocationSchema,
+      default: {}
     }
   ]
 });

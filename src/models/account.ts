@@ -17,13 +17,13 @@ const AccountSchema = new Schema<AccountInterface>({
     type: String,
     unique: true,
     required: [true, "A username is required"],
-    validate: [isValidUsername, "Please enter a valid username"],
+    validate: [isValidUsername, "Please, enter a valid username"],
     trim: true,
   },
   email: {
     type: String,
     required: [true, "An email address is required"],
-    validate: [isValidEmail, "Please fill a valid email address"],
+    validate: [isValidEmail, "Please, fill a valid email address"],
     trim: true,
   },
   password: {

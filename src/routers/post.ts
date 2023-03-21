@@ -1,14 +1,12 @@
 require("dotenv").config();
 
 import * as express from "express";
-import * as bcryptjs from "bcryptjs";
 import * as jwt from "../middleware/authJwt";
 import { Account } from "../models/account";
 
 import { Commerce } from "../models/commerce";
 import { isSecure } from "../utils/validateAccount";
-
-const saltRounds = 12;
+import { comparePassword, hashPassword } from "../utils/hashPassword";
 
 /**
  * Contains all the functionality to store items in the database
@@ -35,38 +33,33 @@ postRouter.post("/signup", async (req, res) => {
               "A password with at least 8 characters, one uppercase and one lowercase is required",
           });
         } else {
-          bcryptjs.genSalt(saltRounds, function (err, salt) {
-            if (err) {
-              res.status(500).send();
-            }
-            bcryptjs.hash(password, salt, function (err, hash) {
-              if (err) {
-                res.status(500).send();
-              }
-              const newAccount = new Account({
-                username: req.body.username,
-                email: req.body.email,
-                password: hash,
-                role: req.body.role,
-              });
-              newAccount
-                .save()
-                .then(() => {
-                  res.status(201).send({
-                    message: "Account successfully created",
-                  });
-                })
-                .catch((error) => {
-                  res.status(400).send(error);
-                });
+          const hash = hashPassword(password);
+          if (!hash) {
+            res.status(500).send({ error: "Internal Server Error" });
+          } else {
+            const newAccount = new Account({
+              username: req.body.username,
+              email: req.body.email,
+              password: hash,
+              role: req.body.role,
             });
-          });
+            newAccount
+              .save()
+              .then(() => {
+                return res.status(201).send({
+                  message: "Account successfully created",
+                });
+              })
+              .catch((error) => {
+                return res.status(400).send(error);
+              });
+          }
         }
       }
     })
     .catch((err) => {
       console.log(err);
-      res.status(500).send();
+      return res.status(500).send();
     });
 });
 
@@ -88,8 +81,7 @@ postRouter.post("/login", (req, res) => {
           });
         } else {
           const passwd = req.body.password.toString();
-          let compare = await bcryptjs.compare(passwd, account.password);
-          if (!compare) {
+          if (!comparePassword(passwd, account.password)) {
             res.status(404).send({
               error: "Incorrect password",
             });
@@ -119,9 +111,14 @@ postRouter.post("/login", (req, res) => {
  */
 postRouter.post("/shop", jwt.authenticateToken, (req, res) => {
   const newShop = new Commerce(req.body);
-  newShop.save().then(() => {
-    res.status(201).send({
-      message: "Shop sucessfully created",
+  newShop
+    .save()
+    .then(() => {
+      res.status(201).send({
+        message: "Shop sucessfully created",
+      });
+    })
+    .catch(() => {
+      res.status(500).send();
     });
-  });
 });

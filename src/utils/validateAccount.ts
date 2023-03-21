@@ -22,11 +22,11 @@ export function isValidEmail(email: string): boolean {
 }
 
 /**
- * Returns true if the username is valid, between 5 to 20 characters.
+ * Returns true if the username is valid, between 4 to 20 characters.
  * @param username 
  * @returns 
  */
 export function isValidUsername(username: string): boolean {
-  const regexp = /^(?=.{5,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/;
+  const regexp = /^(?=.{4,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/;
   return regexp.test(username);
 }

@@ -77,14 +77,14 @@ describe('POST /signup', () => {
 
   it ("does NOT create an account with a password without uppercase", async() => {
     await request(app).post('/signup').send({
-      username: "man",
+      username: "mana",
       role: "admin",
       email: "jhondoe@email.com",
       password: "johndoejohndoe1",
     }).expect(400);
 
     await request(app).post('/signup').send({
-      username: "man",
+      username: "mana",
       role: "admin",
       email: "jhondoe@email.com",
       password: "1johndoejohndoE",
@@ -93,14 +93,14 @@ describe('POST /signup', () => {
 
   it ("does NOT create an account with a password without lowercase", async() => {
     await request(app).post('/signup').send({
-      username: "men",
+      username: "mena",
       role: "admin",
       email: "jhondoe@email.com",
       password: "JOHNDOEJOHNDOE1",
     }).expect(400);
 
     await request(app).post('/signup').send({
-      username: "men",
+      username: "mena",
       role: "admin",
       email: "jhondoe@email.com",
       password: "Johndoejohndoe1",

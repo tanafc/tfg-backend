@@ -65,17 +65,18 @@ getRouter.get('/shop', jwt.authenticateToken, (req, res) => {
   const filter = req.query.name ? { name: req.query.name.toString() } : undefined;
   if (!filter) {
     res.status(404).send("A name for a commerce needs to be provided");
+  } else {
+    Commerce.find(filter).then(async (shops) => {
+      if (shops.length === 0) {
+        res.status(404).send({
+          error: "No shop was found"
+        });
+      }
+      res.send(shops);
+    }).catch(() => {
+      res.status(500).send();
+    });
   }
-  Commerce.findOne(filter).then(async (shop) => {
-    if (!shop) {
-      res.status(404).send({
-        error: "No shop was found"
-      });
-    }
-    res.send(shop);
-  }).catch(() => {
-    res.status(500).send();
-  });
 });
 
 

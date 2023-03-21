@@ -6,7 +6,7 @@ import * as jwt from "../middleware/authJwt";
 import { Account } from "../models/account";
 
 import { Commerce } from "../models/commerce";
-import { isSecure } from "../utils.ts/validateAccount";
+import { isSecure } from "../utils/validateAccount";
 
 const saltRounds = 12;
 

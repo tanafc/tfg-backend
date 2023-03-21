@@ -1,5 +1,5 @@
 import { Schema, Types, model } from "mongoose";
-import { isValidEmail, isValidUsername } from "../utils.ts/validateAccount";
+import { isValidEmail, isValidUsername } from "../utils/validateAccount";
 
 /**
  * This interface is where the Account schema is based from

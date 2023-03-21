@@ -1,7 +1,7 @@
 import * as express from "express";
 import * as jwt from "../middleware/authJwt";
-import * as bcryptjs from "bcryptjs";
 import { Account } from "../models/account";
+import { comparePassword } from "../utils/hashPassword";
 // import { Commerce } from '../models/commerce';
 // import { Product } from '../models/product';
 
@@ -30,9 +30,7 @@ deleteRouter.delete("/account", jwt.authenticateToken, async (req, res) => {
         .send({ error: `No account was found by username: ${username}` });
     }
 
-    const comparison = await bcryptjs.compare(password, account.password);
-
-    if (!comparison) {
+    if (!comparePassword(password, account.password)) {
       return res.status(401).send({ error: "Incorrect password" });
     }
 

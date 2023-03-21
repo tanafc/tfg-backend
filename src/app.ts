@@ -3,8 +3,8 @@ import * as cors from "cors";
 import { defaultRouter } from "./routers/default";
 import { postRouter } from "./routers/post";
 import { getRouter } from "./routers/get";
-import {patchRouter} from './routers/patch';
-import {deleteRouter} from './routers/delete';
+import { patchRouter } from "./routers/patch";
+import { deleteRouter } from "./routers/delete";
 
 const app = express();
 

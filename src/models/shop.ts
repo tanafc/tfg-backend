@@ -48,13 +48,11 @@ const ShopSchema = new Schema<ShopInterface>({
   products: [
     {
       type: Schema.Types.ObjectId, ref: 'Product',
-      default: {}
     },
   ],
   locations: [
     {
       type: LocationSchema,
-      default: {}
     }
   ]
 });

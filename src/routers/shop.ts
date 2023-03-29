@@ -121,3 +121,57 @@ shopRouter.post("/shop/location", jwt.authenticateToken, async (req, res) => {
   return;
 });
 
+// Only for Admin role
+shopRouter.delete("/shop", jwt.authenticateToken, async (req, res) => { 
+  if (!req.query.name) {
+    return res.status(400).send({
+      error: "A name needs to be provided"
+    });
+  }
+  try {
+    const shop = await Shop.findOneAndDelete({name: req.query.name.toString()})
+
+    if (!shop) {
+      return res.status(404).send();
+    }
+
+    return res.send(shop)
+
+  } catch(error) {
+    return res.status(400).send();
+  }
+});
+
+// Only for Admin role
+shopRouter.patch("/shop", jwt.authenticateToken, async (req, res) => {
+  if (!req.query.name) {
+    return res.status(400).send({
+      error: "A name needs to be provided"
+    });
+  }
+  const allowedUpdates = ['name', 'products', 'locations'];
+  const actualUpdates = Object.keys(req.body);
+  const isValidUpdate = actualUpdates.every((update) => allowedUpdates.includes(update));
+
+  if (!isValidUpdate) {
+    return res.status(400).send({
+      error: "Update is not permitted",
+    });
+  }
+
+  try {
+    const shop = await Shop.findOneAndUpdate({name: req.query.name.toString()}, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    
+    if (!shop) {
+      return res.status(404).send();
+    }
+
+    return res.send(shop)
+  } catch (error) {
+    return res.status(400).send()
+  }
+});
+

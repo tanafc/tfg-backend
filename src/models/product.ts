@@ -10,7 +10,7 @@ interface ProductInterface {
   brand: string,
   image: string,
   record: Types.ObjectId[],
-  commerces: Types.ObjectId[],
+  shops: Types.ObjectId[],
   ingredients: string[],
   nutrients: Types.ObjectId,
   beverage: boolean,
@@ -47,9 +47,9 @@ const ProductSchema = new Schema<ProductInterface>({
       required: true
     },
   ],
-  commerces: [
+  shops: [
     {
-      type: Schema.Types.ObjectId, ref: 'Commerce',
+      type: Schema.Types.ObjectId, ref: 'Shop',
       required: true
     },
   ],

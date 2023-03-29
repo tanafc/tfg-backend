@@ -23,10 +23,14 @@ const LocationSchema = new Schema<Location>({
   latitude: {
     type: Number,
     required: true,
+    min: [-90, "Latitude not valid"],
+    max: [90, "Latitude not valid"]
   },
   longitude: {
     type: Number,
     required: true,
+    min: [-180, "Longitude not valid"],
+    max: [180, "Longitude not valid"]
   },
   location: {
     type: String,

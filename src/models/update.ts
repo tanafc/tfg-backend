@@ -7,8 +7,7 @@ import { Schema, Types, model } from 'mongoose';
 interface UpdateInterface {
   price: number,
   date: Date,
-  location: string,
-  commerce: Types.ObjectId,
+  shop: Types.ObjectId,
   user: Types.ObjectId,
 }
 
@@ -22,13 +21,9 @@ const UpdateSchema = new Schema<UpdateInterface>({
     type: Date,
     required: [true, 'A date is required'],
   },
-  location: {
-    type: String,
-    required: [true, 'A location is required'],
-  },
-  commerce: {
-    type: Schema.Types.ObjectId, ref: 'Commerce',
-    required: [true, 'A commerce is required'],
+  shop: {
+    type: Schema.Types.ObjectId, ref: 'Shop',
+    required: [true, 'A shop is required'],
   },
   user: {
     type: Schema.Types.ObjectId, ref: 'User',

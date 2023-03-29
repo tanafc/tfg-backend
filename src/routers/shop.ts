@@ -81,7 +81,7 @@ shopRouter.post("/shop/location", jwt.authenticateToken, async (req, res) => {
 
   if (!filter) {
     return res.status(404).send({
-      error: "The name of the shops needs to be provided",
+      error: "The name of the shop needs to be provided",
     });
   }
 
@@ -115,9 +115,9 @@ shopRouter.post("/shop/location", jwt.authenticateToken, async (req, res) => {
         shop,
       });
     })
-    .catch((err) => {
-      console.log(err);
-      return res.status(500).send();
+    .catch(() => {
+      return res.status(400).send();
     });
   return;
 });
+

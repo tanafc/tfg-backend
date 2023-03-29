@@ -12,7 +12,7 @@ interface Location {
 /**
  * This interface is where the Account schema is based from
  */
-interface CommerceInterface {
+interface ShopInterface {
   name: string,
   products: Types.ObjectId[],
   locations: Location[],
@@ -34,7 +34,7 @@ const LocationSchema = new Schema<Location>({
 });
 
 
-const CommerceSchema = new Schema<CommerceInterface>({
+const ShopSchema = new Schema<ShopInterface>({
   name: {
     type: String,
     unique: true,
@@ -58,4 +58,4 @@ const CommerceSchema = new Schema<CommerceInterface>({
 /**
  * The final model for the Account database
  */
-export const Commerce = model<CommerceInterface>('Commerce', CommerceSchema);
+export const Shop = model<ShopInterface>('Shop', ShopSchema);

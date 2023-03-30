@@ -11,14 +11,14 @@ shopRouter.get("/shop", jwt.authenticateToken, (req, res) => {
   if (!filter) {
     res.status(404).send("A name for a shop needs to be provided");
   } else {
-    Shop.find(filter)
-      .then(async (shops) => {
-        if (shops.length === 0) {
+    Shop.findOne(filter)
+      .then(async (shop) => {
+        if (!shop) {
           res.status(404).send({
-            error: "No shops were found",
+            error: "No shop was found",
           });
         } else {
-          res.send(shops);
+          res.send(shop);
         }
       })
       .catch(() => {
@@ -52,7 +52,6 @@ shopRouter.post("/shop", jwt.authenticateToken, (req, res) => {
     });
   } else {
     Shop.findOne(filter).then((shop) => {
-      console.log(shop);
       if (shop) {
         res.status(404).send({
           error: `The supermarket ${shop.name} already exists.`,
@@ -100,7 +99,6 @@ shopRouter.post("/shop/location", jwt.authenticateToken, async (req, res) => {
   };
 
   if (!(geoLocation.latitude && geoLocation.longitude)) {
-    console.log(geoLocation);
     return res.status(400).send({
       error: `A location needs to have a latitude and longitude, but it was not provided.`,
     });

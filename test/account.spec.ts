@@ -251,8 +251,6 @@ describe("POST /login", () => {
 
     const token = generateAccessToken({
       username: "garrus",
-      email: "jhondoe@email.com",
-      role: "admin",
     });
 
     expect(response.body.accessToken).to.be.equal(token);
@@ -305,7 +303,7 @@ describe("PATCH /account", () => {
       .set({ Authorization: `Bearer ${token}` })
       .send({
         updates: {
-          username: "nul"
+          username: "nul",
         },
       })
       .then((res) => {
@@ -319,7 +317,7 @@ describe("PATCH /account", () => {
       .set({ Authorization: `Bearer ${token}` })
       .send({
         updates: {
-          email: "nul"
+          email: "nul",
         },
       })
       .then((res) => {
@@ -333,7 +331,7 @@ describe("PATCH /account", () => {
       .set({ Authorization: `Bearer ${token}` })
       .send({
         updates: {
-          password: "nul"
+          password: "nul",
         },
       })
       .then((res) => {
@@ -394,24 +392,45 @@ describe("PATCH /account", () => {
   });
 });
 
-// describe("DELETE /account", () => {
-//   const testAccount = {
-//     username: "tali1",
-//     email: "test@test.es",
-//     password: "Testtest1",
-//   };
+describe("DELETE /account", () => {
+  const testAccount = {
+    username: "tali1",
+    email: "test@test.es",
+    password: "Testtest1",
+  };
 
-//   let token: string = "";
+  let token: string = "";
 
-//   beforeEach(async () => {
-//     await request(app).post("/signup").send(testAccount);
-//     await request(app)
-//       .post("/login")
-//       .send(testAccount)
-//       .then((res) => {
-//         token = res.body.accessToken;
-//       });
-//   });
+  beforeEach(async () => {
+    await request(app).post("/signup").send(testAccount);
+    await request(app)
+      .post("/login")
+      .send(testAccount)
+      .then((res) => {
+        token = res.body.accessToken;
+      });
+  });
 
-//   it("does NOT delete an account without the correct password given")
-// })
+  it("does NOT delete an account without the correct password given", async () => {
+    await request(app)
+      .delete("/account")
+      .set({ Authorization: `Bearer ${token}` })
+      .send({
+        password: "IncorrectPassword1",
+      })
+      .expect(401);
+  });
+
+  it("deletes an account correctly when the password is given", async () => {
+    await request(app)
+      .delete("/account")
+      .set({ Authorization: `Bearer ${token}` })
+      .send({
+        password: "Testtest1",
+      })
+      .then((res) => {
+        expect(res.status).to.be.equal(200);
+        expect(res.body.message).to.be.equal("Account successfully deleted");
+      });
+  });
+});

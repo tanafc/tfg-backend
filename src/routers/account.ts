@@ -6,24 +6,10 @@ import { isSecure } from "../utils/validateAccount";
 
 export const accountRouter = express.Router();
 
-accountRouter.get("/account", jwt.authenticateToken, async (req, res) => {
-  const filter = req.query.username
-    ? { username: req.query.username.toString() }
-    : undefined;
-
-  if (!filter) {
-    return res.status(400).send({
-      error: "An account name needs to be provided",
-    });
-  }
+accountRouter.get("/account", jwt.authenticateToken, async (_, res) => {
+  const account = res.locals.auth
 
   try {
-    const account = await Account.findOne(filter);
-
-    if (!account) {
-      return res.status(400).send();
-    }
-
     return res.send({
       username: account.username,
       email: account.email,
@@ -35,24 +21,53 @@ accountRouter.get("/account", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-accountRouter.get("/account/:id", jwt.authenticateToken, async (req, res) => {
-  try {
-    const account = await Account.findById(req.params.id);
+// accountRouter.get("/account", jwt.authenticateToken, async (req, res) => {
+//   const filter = req.query.username
+//     ? { username: req.query.username.toString() }
+//     : undefined;
 
-    if (!account) {
-      return res.status(404).send();
-    }
+//   if (!filter) {
+//     return res.status(400).send({
+//       error: "An account name needs to be provided",
+//     });
+//   }
 
-    return res.send({
-      username: account.username,
-      email: account.email,
-      role: account.role,
-      products: account.products,
-    });
-  } catch (error) {
-    return res.status(400).send(error);
-  }
-});
+//   try {
+//     const account = await Account.findOne(filter);
+
+//     if (!account) {
+//       return res.status(400).send();
+//     }
+
+//     return res.send({
+//       username: account.username,
+//       email: account.email,
+//       role: account.role,
+//       products: account.products,
+//     });
+//   } catch (error) {
+//     return res.status(400).send(error);
+//   }
+// });
+
+// accountRouter.get("/account/:id", jwt.authenticateToken, async (req, res) => {
+//   try {
+//     const account = await Account.findById(req.params.id);
+
+//     if (!account) {
+//       return res.status(404).send();
+//     }
+
+//     return res.send({
+//       username: account.username,
+//       email: account.email,
+//       role: account.role,
+//       products: account.products,
+//     });
+//   } catch (error) {
+//     return res.status(400).send(error);
+//   }
+// });
 
 accountRouter.post("/signup", async (req, res) => {
   const filter = req.body.username
@@ -130,8 +145,6 @@ accountRouter.post("/login", async (req, res) => {
 
     const accessToken = jwt.generateAccessToken({
       username: account.username,
-      email: account.email,
-      role: account.role,
     });
 
     return res.status(201).send({
@@ -150,7 +163,7 @@ accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
   try {
     const updates = req.body.updates ?? {};
 
-    const token = res.locals.auth;
+    const account = res.locals.auth;
 
     const allowedUpdates = ["username", "password", "email"];
     const actualUpdates = Object.keys(updates);
@@ -173,15 +186,15 @@ accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
     }
 
     const updatesToApply = {
-      username: updates.username ?? token.username,
-      email: updates.email ?? token.email,
+      username: updates.username ?? account.username,
+      email: updates.email ?? account.email,
       ...(updates.password && {
         password: hashPassword(updates.password),
       }),
     };
 
-    const account = await Account.findOneAndUpdate(
-      { username: token.username },
+    const updatedAccount = await Account.findOneAndUpdate(
+      { username: account.username },
       updatesToApply,
       {
         new: true,
@@ -189,20 +202,18 @@ accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
       }
     );
 
-    if (!account) {
-      return res.status(404).send();
+    if (!updatedAccount) {
+      return res.status(500).send();
     }
 
     const accessToken = jwt.generateAccessToken({
-      username: account.username,
-      email: account.email,
-      role: account.role,
+      username: updatedAccount.username,
     });
 
     return res.status(200).send({
-      username: account.username,
-      email: account.email,
-      role: account.role,
+      username: updatedAccount.username,
+      email: updatedAccount.email,
+      role: updatedAccount.role,
       accessToken: accessToken,
     });
   } catch (err) {
@@ -214,16 +225,10 @@ accountRouter.delete("/account", jwt.authenticateToken, async (req, res) => {
   try {
     const password: string | undefined = req.body.password?.toString();
 
-    const token = res.locals.auth;
+    const account = res.locals.auth;
 
     if (!password) {
       return res.status(401).send({ error: "A password needs to be provided" });
-    }
-
-    const account = await Account.findOne({ username: token.username });
-
-    if (!account) {
-      return res.status(404).send();
     }
 
     if (!comparePassword(password, account.password)) {

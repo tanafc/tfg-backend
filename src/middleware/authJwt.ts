@@ -1,14 +1,13 @@
 require("dotenv").config();
 
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 import * as jwt from "jsonwebtoken";
+import { Account } from "../models/account";
 
 type TokenPayload = {
   username: string;
-  email: string;
-  role: string;
-  iat?: number,
-  exp?: number,
+  iat?: number;
+  exp?: number;
 };
 
 /**
@@ -39,8 +38,14 @@ export const authenticateToken = async (
       token,
       process.env.ACCESS_TOKEN_SECRET as jwt.Secret
     ) as TokenPayload;
+    
+    const account = await Account.findOne({ username: decoded.username });
 
-    res.locals.auth = decoded;
+    if (!account) {
+      throw new Error();
+    }
+    
+    res.locals.auth = account;
 
     next();
   } catch (err) {

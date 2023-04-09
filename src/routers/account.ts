@@ -2,9 +2,7 @@ import * as express from "express";
 import * as jwt from "../middleware/authJwt";
 import { Account } from "../models/account";
 import { comparePassword, hashPassword } from "../utils/hashPassword";
-import {
-  isSecure,
-} from "../utils/validateAccount";
+import { isSecure } from "../utils/validateAccount";
 
 export const accountRouter = express.Router();
 
@@ -192,7 +190,7 @@ accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
     );
 
     if (!account) {
-      return res.status(404).send()
+      return res.status(404).send();
     }
 
     const accessToken = jwt.generateAccessToken({
@@ -214,39 +212,40 @@ accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
 
 accountRouter.delete("/account", jwt.authenticateToken, async (req, res) => {
   try {
-    const username: string | undefined = req.body.username?.toString();
     const password: string | undefined = req.body.password?.toString();
-    const email: string | undefined = req.body.email?.toString();
 
-    if (!(username && email && password)) {
-      return res
-        .status(404)
-        .send({ error: "A username, email and password needs to be provided" });
+    const token = res.locals.auth;
+
+    if (!password) {
+      return res.status(401).send({ error: "A password needs to be provided" });
     }
 
-    const account = await Account.findOne({ username: username });
+    const account = await Account.findOne({ username: token.username });
 
     if (!account) {
-      return res
-        .status(404)
-        .send({ error: `No account was found by username: ${username}` });
+      return res.status(404).send();
     }
 
     if (!comparePassword(password, account.password)) {
       return res.status(401).send({ error: "Incorrect password" });
     }
 
-    if (email !== account.email) {
-      return res.status(404).send({ error: "Incorrect email" });
-    }
-
-    Account.deleteOne({ username: username }).then(() => {
-      return res.status(200).send("Account successfully deleted");
+    const deletedAccount = Account.findOneAndDelete({
+      username: account.username,
     });
 
-    return;
+    if (!deletedAccount) {
+      return res.status(500).send();
+    }
+
+    return res.status(200).send({
+      username: account.username,
+      email: account.email,
+      role: account.role,
+      message: "Account successfully deleted",
+    });
   } catch (err) {
     console.log(err);
-    return res.status(500).send({ error: "Internal Server Error" });
+    return res.status(400).send({ err });
   }
 });

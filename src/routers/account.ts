@@ -4,8 +4,6 @@ import { Account } from "../models/account";
 import { comparePassword, hashPassword } from "../utils/hashPassword";
 import {
   isSecure,
-  isValidEmail,
-  isValidUsername,
 } from "../utils/validateAccount";
 
 export const accountRouter = express.Router();
@@ -132,11 +130,11 @@ accountRouter.post("/login", async (req, res) => {
       });
     }
 
-    const accessToken = jwt.generateAccessToken(
-      account.username,
-      account.email,
-      account.role
-    );
+    const accessToken = jwt.generateAccessToken({
+      username: account.username,
+      email: account.email,
+      role: account.role,
+    });
 
     return res.status(201).send({
       id: account._id,
@@ -152,32 +150,9 @@ accountRouter.post("/login", async (req, res) => {
 
 accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
   try {
-    const username: string | undefined = req.body.username?.toString();
-    const password: string | undefined = req.body.password?.toString();
-    const email: string | undefined = req.body.email?.toString();
     const updates = req.body.updates ?? {};
 
-    if (!(username && email && password)) {
-      return res
-        .status(404)
-        .send({ error: "A username, email and password needs to be provided" });
-    }
-
-    const account = await Account.findOne({ username: username });
-
-    if (!account) {
-      return res
-        .status(404)
-        .send({ error: `No account was found by username: ${username}` });
-    }
-
-    if (!comparePassword(password, account.password)) {
-      return res.status(401).send({ error: "Incorrect password" });
-    }
-
-    if (email !== account.email) {
-      return res.status(400).send({ error: "Incorrect email" });
-    }
+    const token = res.locals.auth;
 
     const allowedUpdates = ["username", "password", "email"];
     const actualUpdates = Object.keys(updates);
@@ -192,18 +167,6 @@ accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
       });
     }
 
-    if (updates.username && !isValidUsername(updates.username.toString())) {
-      return res.status(400).send({
-        error: "Username not valid",
-      });
-    }
-
-    if (updates.email && !isValidEmail(updates.email.toString())) {
-      return res.status(400).send({
-        error: "Email not valid",
-      });
-    }
-
     if (updates.password && !isSecure(updates.password.toString())) {
       return res.status(400).send({
         error:
@@ -212,37 +175,40 @@ accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
     }
 
     const updatesToApply = {
-      username: updates.username ?? username,
-      email: updates.email ?? email,
-      ...(updates.password &&
-        isSecure(updates.password) && {
-          password: hashPassword(updates.password),
-        }),
+      username: updates.username ?? token.username,
+      email: updates.email ?? token.email,
+      ...(updates.password && {
+        password: hashPassword(updates.password),
+      }),
     };
 
-    Account.findOneAndUpdate({ username: username }, updatesToApply, {
-      new: true,
-    }).then((account) => {
-      if (account) {
-        const accessToken = jwt.generateAccessToken(
-          account.username,
-          account.email,
-          account.role
-        );
-        return res.status(200).send({
-          username: account.username,
-          email: account.email,
-          role: account.role,
-          accessToken: accessToken,
-        });
-      } else {
-        return res.status(500).send({ error: "Internal Server Error" });
+    const account = await Account.findOneAndUpdate(
+      { username: token.username },
+      updatesToApply,
+      {
+        new: true,
+        runValidators: true,
       }
+    );
+
+    if (!account) {
+      return res.status(404).send()
+    }
+
+    const accessToken = jwt.generateAccessToken({
+      username: account.username,
+      email: account.email,
+      role: account.role,
     });
-    return;
+
+    return res.status(200).send({
+      username: account.username,
+      email: account.email,
+      role: account.role,
+      accessToken: accessToken,
+    });
   } catch (err) {
-    console.log(err);
-    return res.status(500).send({ error: "Internal Server Error" });
+    return res.status(400).send(err);
   }
 });
 

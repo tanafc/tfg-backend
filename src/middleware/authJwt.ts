@@ -3,19 +3,21 @@ require("dotenv").config();
 import { Request, Response, NextFunction } from "express";
 import * as jwt from "jsonwebtoken";
 
+type TokenPayload = {
+  username: string;
+  email: string;
+  role: string;
+  iat?: number,
+  exp?: number,
+};
+
 /**
  * Function to generate JWT tokens
  */
-export function generateAccessToken(username: string, email: string, role: string) {
-  return jwt.sign(
-    {
-      username: username,
-      email: email,
-      role: role
-    },
-    process.env.ACCESS_TOKEN_SECRET as string,
-    { expiresIn: "2h" }
-  );
+export function generateAccessToken(payload: TokenPayload) {
+  return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET as string, {
+    expiresIn: "2h",
+  });
 }
 
 /**
@@ -36,8 +38,8 @@ export const authenticateToken = async (
     const decoded = jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET as jwt.Secret
-    );
-    
+    ) as TokenPayload;
+
     res.locals.auth = decoded;
 
     next();

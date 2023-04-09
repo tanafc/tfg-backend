@@ -249,7 +249,11 @@ describe("POST /login", () => {
       role: "admin",
     });
 
-    const token = generateAccessToken("garrus", "jhondoe@email.com", "admin");
+    const token = generateAccessToken({
+      username: "garrus",
+      email: "jhondoe@email.com",
+      role: "admin",
+    });
 
     expect(response.body.accessToken).to.be.equal(token);
   });
@@ -278,32 +282,11 @@ describe("PATCH /account", () => {
     await Account.deleteMany();
   });
 
-  it("does NOT allow a change without the correct password given", async () => {
-    await request(app)
-      .patch("/account")
-      .set({ Authorization: `Bearer ${token}` })
-      .send({
-        username: "tali1",
-        email: "test@test.es",
-        password: "null",
-        changes: {
-          username: "tali2",
-        },
-      })
-      .then((res) => {
-        expect(res.status).to.be.equal(401);
-        expect(res.body.error).to.be.equal("Incorrect password");
-      });
-  });
-
   it("does NOT allow an invalid change in the account", async () => {
     await request(app)
       .patch("/account")
       .set({ Authorization: `Bearer ${token}` })
       .send({
-        username: "tali1",
-        email: "test@test.es",
-        password: "Testtest1",
         updates: {
           role: "admin",
         },
@@ -316,14 +299,53 @@ describe("PATCH /account", () => {
       });
   });
 
+  it("does NOT allow an invalid change of the username", async () => {
+    await request(app)
+      .patch("/account")
+      .set({ Authorization: `Bearer ${token}` })
+      .send({
+        updates: {
+          username: "nul"
+        },
+      })
+      .then((res) => {
+        expect(res.status).to.be.equal(400);
+      });
+  });
+
+  it("does NOT allow an invalid change of the email", async () => {
+    await request(app)
+      .patch("/account")
+      .set({ Authorization: `Bearer ${token}` })
+      .send({
+        updates: {
+          email: "nul"
+        },
+      })
+      .then((res) => {
+        expect(res.status).to.be.equal(400);
+      });
+  });
+
+  it("does NOT allow an invalid change of the password", async () => {
+    await request(app)
+      .patch("/account")
+      .set({ Authorization: `Bearer ${token}` })
+      .send({
+        updates: {
+          password: "nul"
+        },
+      })
+      .then((res) => {
+        expect(res.status).to.be.equal(400);
+      });
+  });
+
   it("allows the change of the username", async () => {
     await request(app)
       .patch("/account")
       .set({ Authorization: `Bearer ${token}` })
       .send({
-        username: "tali1",
-        email: "test@test.es",
-        password: "Testtest1",
         updates: {
           username: "tali2",
         },
@@ -339,9 +361,6 @@ describe("PATCH /account", () => {
       .patch("/account")
       .set({ Authorization: `Bearer ${token}` })
       .send({
-        username: "tali1",
-        email: "test@test.es",
-        password: "Testtest1",
         updates: {
           email: "test2@test.es",
         },
@@ -357,9 +376,6 @@ describe("PATCH /account", () => {
       .patch("/account")
       .set({ Authorization: `Bearer ${token}` })
       .send({
-        username: "tali1",
-        email: "test@test.es",
-        password: "Testtest1",
         updates: {
           password: "Testtest2",
         },
@@ -372,7 +388,8 @@ describe("PATCH /account", () => {
             username: "tali1",
             email: "test@test.es",
             password: "Testtest2",
-          }).expect(201);
+          })
+          .expect(201);
       });
   });
 });

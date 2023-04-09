@@ -4,74 +4,71 @@ import { Shop } from "../models/shop";
 
 export const shopRouter = express.Router();
 
-shopRouter.get("/shop", jwt.authenticateToken, (req, res) => {
+shopRouter.get("/shop", jwt.authenticateToken, async (req, res) => {
   const filter = req.query.name
     ? { name: req.query.name.toString() }
     : undefined;
+
   if (!filter) {
-    res.status(404).send("A name for a shop needs to be provided");
-  } else {
-    Shop.findOne(filter)
-      .then(async (shop) => {
-        if (!shop) {
-          res.status(404).send({
-            error: "No shop was found",
-          });
-        } else {
-          res.send(shop);
-        }
-      })
-      .catch(() => {
-        res.status(500).send();
-      });
+    return res.status(400).send({
+      error: "A name for a shop needs to be provided",
+    });
+  }
+
+  try {
+    const shop = await Shop.findOne(filter);
+
+    if (!shop) {
+      return res.status(404).send();
+    }
+
+    return res.send(shop);
+  } catch (error) {
+    return res.status(400).send(error);
   }
 });
 
-shopRouter.get("/shop/:id", jwt.authenticateToken, (req, res) => {
-  Shop.findById(req.params.id)
-    .then((shop) => {
-      if (!shop) {
-        res.status(404).send({
-          error: "No shops were found",
-        });
-      } else {
-        res.send(shop);
-      }
-    })
-    .catch(() => {
-      res.status(500).send();
-    });
+shopRouter.get("/shop/:id", jwt.authenticateToken, async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id);
+
+    if (!shop) {
+      return res.status(404).send();
+    }
+
+    return res.send(shop);
+  } catch (error) {
+    return res.status(400).send(error);
+  }
 });
 
-shopRouter.post("/shop", jwt.authenticateToken, (req, res) => {
+shopRouter.post("/shop", jwt.authenticateToken, async (req, res) => {
   const filter = req.body.name ? { name: req.body.name.toString() } : undefined;
 
   if (!filter) {
-    res.status(400).send({
+    return res.status(400).send({
       error: "A name for a shop needs to be provided.",
     });
-  } else {
-    Shop.findOne(filter).then((shop) => {
-      if (shop) {
-        res.status(404).send({
-          error: `The supermarket ${shop.name} already exists.`,
-        });
-      } else {
-        const newShop = new Shop(req.body);
-        newShop
-          .save()
-          .then((shop) => {
-            res.status(201).send({
-              message: "Shop sucessfully created",
-              shop,
-            });
-          })
-          .catch((err) => {
-            console.log(err);
-            res.status(500).send();
-          });
-      }
+  }
+
+  try {
+    const shop = await Shop.findOne(filter);
+
+    if (shop) {
+      return res.send(400).send({
+        error: `The supermarket ${shop.name} already exists.`,
+      });
+    }
+
+    const newShop = new Shop(req.body);
+    await newShop.save();
+
+    return res.status(201).send({
+      message: "Shop sucessfully created",
+      shop,
     });
+  } catch (error) {
+    return res.status(400).send(error);
   }
 });
 
@@ -84,58 +81,45 @@ shopRouter.post("/shop/location", jwt.authenticateToken, async (req, res) => {
     });
   }
 
-  const shop = await Shop.findOne(filter);
+  try {
+    const shop = await Shop.findOne(filter);
 
-  if (!shop) {
-    return res.status(404).send({
-      error: `No shops with name ${req.body.name} were found`,
-    });
-  }
-
-  const geoLocation = {
-    latitude: req.body.latitude ?? undefined,
-    longitude: req.body.longitude ?? undefined,
-    location: req.body.location ?? undefined,
-  };
-
-  if (!(geoLocation.latitude && geoLocation.longitude)) {
-    return res.status(400).send({
-      error: `A location needs to have a latitude and longitude, but it was not provided.`,
-    });
-  }
-
-  shop.locations.push(geoLocation);
-  shop
-    .save()
-    .then(() => {
-      return res.status(201).send({
-        message: "A new location was added",
-        shop,
+    if (!shop) {
+      return res.status(404).send({
+        error: `No shops with name ${req.body.name} were found`,
       });
-    })
-    .catch(() => {
-      return res.status(400).send();
+    }
+
+    shop.locations.push(req.body.geolocation);
+    await shop.save();
+
+    return res.status(201).send({
+      message: `New location added for shop ${shop.name}`,
+      geolocation: req.body.geolocation,
     });
-  return;
+  } catch (error) {
+    return res.status(400).send(error);
+  }
 });
 
 // Only for Admin role
-shopRouter.delete("/shop", jwt.authenticateToken, async (req, res) => { 
+shopRouter.delete("/shop", jwt.authenticateToken, async (req, res) => {
   if (!req.query.name) {
     return res.status(400).send({
-      error: "A name needs to be provided"
+      error: "A name needs to be provided",
     });
   }
   try {
-    const shop = await Shop.findOneAndDelete({name: req.query.name.toString()})
+    const shop = await Shop.findOneAndDelete({
+      name: req.query.name.toString(),
+    });
 
     if (!shop) {
       return res.status(404).send();
     }
 
-    return res.send(shop)
-
-  } catch(error) {
+    return res.send(shop);
+  } catch (error) {
     return res.status(400).send();
   }
 });
@@ -144,12 +128,14 @@ shopRouter.delete("/shop", jwt.authenticateToken, async (req, res) => {
 shopRouter.patch("/shop", jwt.authenticateToken, async (req, res) => {
   if (!req.query.name) {
     return res.status(400).send({
-      error: "A name needs to be provided"
+      error: "A name needs to be provided",
     });
   }
-  const allowedUpdates = ['name', 'products', 'locations'];
+  const allowedUpdates = ["name", "products", "locations"];
   const actualUpdates = Object.keys(req.body);
-  const isValidUpdate = actualUpdates.every((update) => allowedUpdates.includes(update));
+  const isValidUpdate = actualUpdates.every((update) =>
+    allowedUpdates.includes(update)
+  );
 
   if (!isValidUpdate) {
     return res.status(400).send({
@@ -158,18 +144,21 @@ shopRouter.patch("/shop", jwt.authenticateToken, async (req, res) => {
   }
 
   try {
-    const shop = await Shop.findOneAndUpdate({name: req.query.name.toString()}, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    
+    const shop = await Shop.findOneAndUpdate(
+      { name: req.query.name.toString() },
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
     if (!shop) {
       return res.status(404).send();
     }
 
-    return res.send(shop)
+    return res.send(shop);
   } catch (error) {
-    return res.status(400).send()
+    return res.status(400).send();
   }
 });
-

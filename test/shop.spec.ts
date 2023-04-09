@@ -3,7 +3,7 @@ import "../src/database/mongoose";
 import app from "../src/app";
 import { after, before } from "mocha";
 import { Shop } from "../src/models/shop";
-import { Account } from "../src/models/account";
+// import { Account } from "../src/models/account";
 
 const testAccount = {
   username: "shoptester",
@@ -24,11 +24,11 @@ before(async () => {
 });
 
 after(async () => {
-  //   await request(app)
-  //     .delete("/account")
-  //     .set({ Authorization: `Bearer ${token}` })
-  //     .send(testAccount);
-  Account.deleteMany();
+    await request(app)
+      .delete("/account")
+      .set({ Authorization: `Bearer ${token}` })
+      .send(testAccount);
+  // Account.deleteMany();
 });
 
 describe("POST /shop", () => {

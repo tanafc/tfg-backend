@@ -10,135 +10,143 @@ import {
 
 export const accountRouter = express.Router();
 
-accountRouter.get("/account", jwt.authenticateToken, (req, res) => {
+accountRouter.get("/account", jwt.authenticateToken, async (req, res) => {
   const filter = req.query.username
     ? { username: req.query.username.toString() }
     : undefined;
+
   if (!filter) {
-    res.status(404).send("An account name needs to be provided");
-  } else {
-    Account.findOne(filter)
-      .then((account) => {
-        if (account === null) {
-          res.status(404).send("No account found");
-        } else {
-          res.send({
-            username: account.username,
-            email: account.email,
-            role: account.role,
-            products: account.products,
-          });
-        }
-      })
-      .catch(() => {
-        res.status(500).send();
-      });
+    return res.status(400).send({
+      error: "An account name needs to be provided",
+    });
+  }
+
+  try {
+    const account = await Account.findOne(filter);
+
+    if (!account) {
+      return res.status(400).send();
+    }
+
+    return res.send({
+      username: account.username,
+      email: account.email,
+      role: account.role,
+      products: account.products,
+    });
+  } catch (error) {
+    return res.status(400).send(error);
   }
 });
 
-accountRouter.get("/account/:id", jwt.authenticateToken, (req, res) => {
-  Account.findById(req.params.id)
-    .then((account) => {
-      if (!account) {
-        res.status(404).send("No account was found");
-      } else {
-        res.send({
-          username: account.username,
-          email: account.email,
-          role: account.role,
-          products: account.products,
-        });
-      }
-    })
-    .catch(() => {
-      res.status(500).send();
+accountRouter.get("/account/:id", jwt.authenticateToken, async (req, res) => {
+  try {
+    const account = await Account.findById(req.params.id);
+
+    if (!account) {
+      return res.status(404).send();
+    }
+
+    return res.send({
+      username: account.username,
+      email: account.email,
+      role: account.role,
+      products: account.products,
     });
+  } catch (error) {
+    return res.status(400).send(error);
+  }
 });
 
 accountRouter.post("/signup", async (req, res) => {
-  const filter = { username: req.body.username?.toString() };
+  const filter = req.body.username
+    ? { username: req.body.username?.toString() }
+    : undefined;
 
-  Account.findOne(filter)
-    .then(async (account) => {
-      if (account != null) {
-        res.status(409).send({
-          error: "The account name is already in use",
-        });
-      } else {
-        let password = req.body.password?.toString();
-        if (!isSecure(password)) {
-          res.status(400).send({
-            error:
-              "A password with at least 8 characters, one uppercase and one lowercase is required",
-          });
-        } else {
-          const hash = hashPassword(password);
-          if (!hash) {
-            res.status(500).send({ error: "Internal Server Error" });
-          } else {
-            const newAccount = new Account({
-              username: req.body.username,
-              email: req.body.email,
-              password: hash,
-              role: req.body.role,
-            });
-            newAccount
-              .save()
-              .then(() => {
-                return res.status(201).send({
-                  message: "Account successfully created",
-                });
-              })
-              .catch((error) => {
-                return res.status(400).send(error);
-              });
-          }
-        }
-      }
-    })
-    .catch((err) => {
-      console.log(err);
-      return res.status(500).send();
+  if (!filter) {
+    return res.status(400).send({
+      error: "An account name needs to be provided",
     });
+  }
+
+  const account = await Account.findOne(filter);
+
+  if (account) {
+    return res.status(409).send({
+      error: "The account name is already in use",
+    });
+  }
+
+  try {
+    let password = req.body.password ? req.body.password.toString() : "";
+    if (!isSecure(password)) {
+      return res.status(400).send({
+        error:
+          "A password with at least 8 characters, one uppercase and one lowercase is required",
+      });
+    }
+
+    const hash = hashPassword(password);
+    if (!hash) {
+      return res.status(500).send({ error: "Internal Server Error" });
+    }
+
+    const newAccount = new Account({
+      username: req.body.username,
+      email: req.body.email,
+      password: hash,
+      role: req.body.role,
+    });
+
+    await newAccount.save();
+
+    return res.status(201).send();
+  } catch (error) {
+    return res.status(400).send();
+  }
 });
 
-accountRouter.post("/login", (req, res) => {
-  if (!req.body.username || !req.body.password) {
-    res.status(400).send({
-      error: "An account name and password must be provided",
+accountRouter.post("/login", async (req, res) => {
+  const filter = req.body.username
+    ? { username: req.body.username?.toString() }
+    : undefined;
+
+  if (!filter) {
+    return res.status(400).send({
+      error: "An account name needs to be provided",
     });
-  } else {
-    const filter = { username: req.body.username?.toString() };
-    Account.findOne(filter)
-      .then(async (account) => {
-        if (!account) {
-          res.status(404).send({
-            error: "No account found",
-          });
-        } else {
-          const passwd = req.body.password.toString();
-          if (!comparePassword(passwd, account.password)) {
-            res.status(404).send({
-              error: "Incorrect password",
-            });
-          } else {
-            const accessToken = jwt.generateAccessToken(
-              account.username,
-              account.email
-            );
-            res.status(201).send({
-              id: account._id,
-              username: account.username,
-              email: account.email,
-              role: account.role,
-              accessToken: accessToken,
-            });
-          }
-        }
-      })
-      .catch(() => {
-        res.status(500).send();
+  }
+
+  try {
+    const account = await Account.findOne(filter);
+
+    if (!account) {
+      return res.status(404).send();
+    }
+
+    const passwd = req.body.password ? req.body.password.toString() : "";
+
+    if (!comparePassword(passwd, account.password)) {
+      return res.status(400).send({
+        error: "Incorrect password",
       });
+    }
+
+    const accessToken = jwt.generateAccessToken(
+      account.username,
+      account.email,
+      account.role
+    );
+
+    return res.status(201).send({
+      id: account._id,
+      username: account.username,
+      email: account.email,
+      role: account.role,
+      accessToken: accessToken,
+    });
+  } catch (error) {
+    return res.status(400).send(error);
   }
 });
 
@@ -168,7 +176,7 @@ accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
     }
 
     if (email !== account.email) {
-      return res.status(404).send({ error: "Incorrect email" });
+      return res.status(400).send({ error: "Incorrect email" });
     }
 
     const allowedUpdates = ["username", "password", "email"];
@@ -218,7 +226,8 @@ accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
       if (account) {
         const accessToken = jwt.generateAccessToken(
           account.username,
-          account.email
+          account.email,
+          account.role
         );
         return res.status(200).send({
           username: account.username,

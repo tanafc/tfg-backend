@@ -1,46 +1,12 @@
-import * as request from "supertest";
-import "../src/database/mongoose";
-import app from "../src/app";
-import { after, before } from "mocha";
-import { Shop } from "../src/models/shop";
 import { expect } from "chai";
-import { Account } from "../src/models/account";
+import * as request from "supertest";
+import app from "../src/app";
+import "../src/database/mongoose";
+import { adminUserToken, regularUserToken, setupDatabase } from "./fixtures/db";
 
-const testRegularAccount = {
-  username: "shoptester",
-  email: "test@test.es",
-  password: "Testtest1",
-};
+beforeEach(setupDatabase);
 
-const testAdminAccount = {
-  username: "shopadmin",
-  email: "test@test.es",
-  password: "Testtest1",
-  role: "admin",
-};
-
-let regularToken: string = "";
-let adminToken: string = "";
-
-afterEach(async () => {
-  await Shop.deleteMany();
-});
-
-describe("POST /shop", () => {
-  before(async () => {
-    await request(app).post("/signup").send(testRegularAccount);
-    await request(app)
-      .post("/login")
-      .send(testRegularAccount)
-      .then((res) => {
-        regularToken = res.body.accessToken;
-      });
-  });
-
-  after(async () => {
-    await Account.deleteMany();
-  });
-
+describe("POST /shops", () => {
   it("does NOT create a new shop without name", async () => {
     const newShop = {
       name: "",
@@ -50,23 +16,23 @@ describe("POST /shop", () => {
     };
 
     await request(app)
-      .post("/shop")
-      .set({ Authorization: `Bearer ${regularToken}` })
+      .post("/shops")
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(newShop)
       .expect(400);
   });
 
   it("creates a new shop in the database", async () => {
     const newShop = {
-      name: "Carrefour",
+      name: "Dia",
       locations: [
         { latitude: 9, longitude: 10, location: "Calle Vieja La Laguna" },
       ],
     };
 
     await request(app)
-      .post("/shop")
-      .set({ Authorization: `Bearer ${regularToken}` })
+      .post("/shops")
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(newShop)
       .expect(201);
   });
@@ -77,214 +43,102 @@ describe("POST /shop", () => {
     };
 
     await request(app)
-      .post("/shop")
-      .set({ Authorization: `Bearer ${regularToken}` })
-      .send(newShop)
-      .expect(201);
-
-    await request(app)
-      .post("/shop")
-      .set({ Authorization: `Bearer ${regularToken}` })
+      .post("/shops")
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(newShop)
       .expect(409);
   });
 });
 
-describe("GET /shop", () => {
-  before(async () => {
-    await request(app).post("/signup").send(testRegularAccount);
-    await request(app)
-      .post("/login")
-      .send(testRegularAccount)
-      .then((res) => {
-        regularToken = res.body.accessToken;
-      });
-  });
-
-  after(async () => {
-    await Account.deleteMany();
-  });
-
+describe("GET /shops", () => {
   it("gets a shop stored in the database", async () => {
-    const newShop = {
-      name: "Alcampo",
-      locations: [
-        { latitude: 9, longitude: 10, location: "Calle Vieja La Laguna" },
-      ],
-    };
-
-    await request(app)
-      .post("/shop")
-      .set({ Authorization: `Bearer ${regularToken}` })
-      .send(newShop)
-      .expect(201);
-
-    await request(app)
-      .get("/shop")
-      .set({ Authorization: `Bearer ${regularToken}` })
+    const response = await request(app)
+      .get("/shops")
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .query({ name: "Alcampo" })
       .expect(200);
+
+    expect(response.body).to.include({
+      name: "Alcampo",
+    });
+
+    expect(response.body).to.have.property("products");
+    expect(response.body).to.have.property("locations");
+    expect(response.body.locations.length).to.be.equal(1);
+    expect(response.body.locations[0]).to.include({
+      latitude: 8,
+      longitude: 8,
+      location: "Santa Cruz",
+    });
   });
 });
 
-describe("PATCH /shop", () => {
-  before(async () => {
-    await request(app).post("/signup").send(testRegularAccount);
-    await request(app)
-      .post("/login")
-      .send(testRegularAccount)
-      .then((res) => {
-        regularToken = res.body.accessToken;
-      });
-
-    await request(app).post("/signup").send(testAdminAccount);
-    await request(app)
-      .post("/login")
-      .send(testAdminAccount)
-      .then((res) => {
-        adminToken = res.body.accessToken;
-      });
-  });
-
-  after(async () => {
-    await Account.deleteMany();
-  });
-
+describe("PATCH /shops", () => {
   it("does NOT allow a user without the admin role to update a shop", async () => {
-    const newShop = {
-      name: "Alcampo",
-      locations: [
-        { latitude: 9, longitude: 10, location: "Calle Vieja La Laguna" },
-      ],
-    };
-
     const updates = {
-      name: "Carrefour",
+      name: "Spar",
       locations: [{ latitude: 10, longitude: 10, location: "Santa Cruz" }],
     };
 
     await request(app)
-      .post("/shop")
-      .set({ Authorization: `Bearer ${regularToken}` })
-      .send(newShop)
-      .expect(201);
-
-    await request(app)
-      .patch("/shop")
+      .patch("/shops")
       .query({ name: "Alcampo" })
-      .set({ Authorization: `Bearer ${regularToken}` })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(updates)
       .expect(401);
   });
 
   it("allows a user with the admin role to update a shop", async () => {
-    const newShop = {
-      name: "Alcampo",
-      locations: [
-        { latitude: 9, longitude: 10, location: "Calle Vieja La Laguna" },
-      ],
-    };
-
     const updates = {
-      name: "Carrefour",
+      name: "Spar",
       locations: [{ latitude: 10, longitude: 10, location: "Santa Cruz" }],
     };
 
-    await request(app)
-      .post("/shop")
-      .set({ Authorization: `Bearer ${adminToken}` })
-      .send(newShop)
-      .expect(201);
-
-    await request(app)
-      .patch("/shop")
+    const response = await request(app)
+      .patch("/shops")
       .query({ name: "Alcampo" })
-      .set({ Authorization: `Bearer ${adminToken}` })
+      .set({ Authorization: `Bearer ${adminUserToken}` })
       .send(updates)
-      .expect(200)
-      .then((res) => {
-        expect(res.body.name).to.equal("Carrefour");
-        expect(res.body.locations.length).to.equal(1);
-        expect(res.body.locations[0]).to.include({
-          latitude: 10,
-          longitude: 10,
-          location: "Santa Cruz"
-        });
-      });
+      .expect(200);
+
+    expect(response.body).to.include({
+      name: "Spar",
+    });
+    expect(response.body).to.have.property("locations");
+    expect(response.body.locations.length).to.be.equal(1);
+    expect(response.body.locations[0]).to.include({
+      latitude: 10,
+      longitude: 10,
+      location: "Santa Cruz",
+    });
   });
 });
 
-describe("DELETE /shop", () => {
-  before(async () => {
-    await request(app).post("/signup").send(testRegularAccount);
-    await request(app)
-      .post("/login")
-      .send(testRegularAccount)
-      .then((res) => {
-        regularToken = res.body.accessToken;
-      });
-
-    await request(app).post("/signup").send(testAdminAccount);
-    await request(app)
-      .post("/login")
-      .send(testAdminAccount)
-      .then((res) => {
-        adminToken = res.body.accessToken;
-      });
-  });
-
-  after(async () => {
-    await Account.deleteMany();
-  });
-
+describe("DELETE /shops", () => {
   it("does NOT allow a user without the admin role to delete a shop", async () => {
-    const newShop = {
-      name: "Alcampo",
-      locations: [
-        { latitude: 9, longitude: 10, location: "Calle Vieja La Laguna" },
-      ],
-    };
-
     await request(app)
-      .post("/shop")
-      .set({ Authorization: `Bearer ${regularToken}` })
-      .send(newShop)
-      .expect(201);
-
-    await request(app)
-      .delete("/shop")
+      .delete("/shops")
       .query({ name: "Alcampo" })
-      .set({ Authorization: `Bearer ${regularToken}` })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .expect(401);
   });
 
   it("allows a user with the admin role to delete a shop", async () => {
-    const newShop = {
-      name: "Alcampo",
-      locations: [
-        { latitude: 9, longitude: 8, location: "Calle Vieja La Laguna" },
-      ],
-    };
-
-    await request(app)
-      .post("/shop")
-      .set({ Authorization: `Bearer ${adminToken}` })
-      .send(newShop)
-      .expect(201);
-
-    await request(app)
-      .delete("/shop")
+    const response = await request(app)
+      .delete("/shops")
       .query({ name: "Alcampo" })
-      .set({ Authorization: `Bearer ${adminToken}` })
-      .expect(200)
-      .then((res) => {
-        expect(res.body.name).to.equal("Alcampo");
-        expect(res.body.locations.length).to.equal(1);
-        expect(res.body.locations[0]).to.include({
-          latitude: 9,
-          longitude: 8,
-          location: "Calle Vieja La Laguna"
-        });
-      });
+      .set({ Authorization: `Bearer ${adminUserToken}` })
+      .expect(200);
+
+    expect(response.body).to.include({
+      name: "Alcampo",
+    });
+    expect(response.body).to.have.property("locations");
+    expect(response.body.locations.length).to.be.equal(1);
+    expect(response.body.locations[0]).to.include({
+      latitude: 8,
+      longitude: 8,
+      location: "Santa Cruz",
+    });
   });
 });

@@ -4,7 +4,7 @@ import { Shop } from "../models/shop";
 
 export const shopRouter = express.Router();
 
-shopRouter.get("/shop", jwt.authenticateToken, async (req, res) => {
+shopRouter.get("/shops", jwt.authenticateToken, async (req, res) => {
   const filter = req.query.name
     ? { name: req.query.name.toString() }
     : undefined;
@@ -28,7 +28,7 @@ shopRouter.get("/shop", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-shopRouter.get("/shop/:id", jwt.authenticateToken, async (req, res) => {
+shopRouter.get("/shops/:id", jwt.authenticateToken, async (req, res) => {
   try {
     const shop = await Shop.findById(req.params.id);
 
@@ -42,7 +42,7 @@ shopRouter.get("/shop/:id", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-shopRouter.post("/shop", jwt.authenticateToken, async (req, res) => {
+shopRouter.post("/shops", jwt.authenticateToken, async (req, res) => {
   const filter = req.body.name ? { name: req.body.name.toString() } : undefined;
 
   if (!filter) {
@@ -72,7 +72,7 @@ shopRouter.post("/shop", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-shopRouter.post("/shop/location", jwt.authenticateToken, async (req, res) => {
+shopRouter.post("/shops/location", jwt.authenticateToken, async (req, res) => {
   const filter = req.body.name ? { name: req.body.name.toString() } : undefined;
 
   if (!filter) {
@@ -103,7 +103,7 @@ shopRouter.post("/shop/location", jwt.authenticateToken, async (req, res) => {
 });
 
 // Only for Admin role
-shopRouter.delete("/shop", jwt.authenticateToken, async (req, res) => {
+shopRouter.delete("/shops", jwt.authenticateToken, async (req, res) => {
   const account = res.locals.auth;
 
   if (account.role !== "admin") {
@@ -131,7 +131,7 @@ shopRouter.delete("/shop", jwt.authenticateToken, async (req, res) => {
 });
 
 // Only for Admin role
-shopRouter.patch("/shop", jwt.authenticateToken, async (req, res) => {
+shopRouter.patch("/shops", jwt.authenticateToken, async (req, res) => {
   const account = res.locals.auth;
 
   if (account.role !== "admin") {

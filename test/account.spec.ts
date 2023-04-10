@@ -1,17 +1,11 @@
 import * as request from "supertest";
 import "../src/database/mongoose";
 import app from "../src/app";
-import { Account } from "../src/models/account";
 import { expect } from "chai";
 import { generateAccessToken } from "../src/middleware/authJwt";
+import { regularUserToken, setupDatabase } from "./fixtures/db";
 
-before(async () => {
-  await Account.deleteMany();
-});
-
-after(async () => {
-  await Account.deleteMany();
-});
+beforeEach(setupDatabase);
 
 describe("POST /signup", () => {
   it("creates a new account", async () => {
@@ -63,7 +57,7 @@ describe("POST /signup", () => {
     await request(app)
       .post("/signup")
       .send({
-        username: "mary",
+        username: "maria",
         role: "regular",
         password: "Johndoejohndoe1",
       })
@@ -74,7 +68,7 @@ describe("POST /signup", () => {
     await request(app)
       .post("/signup")
       .send({
-        username: "hari",
+        username: "harid",
         role: "regular",
         email: "jhondoe@email.com",
         password: "Asd1234",
@@ -86,7 +80,7 @@ describe("POST /signup", () => {
     await request(app)
       .post("/signup")
       .send({
-        username: "hari",
+        username: "harid",
         role: "regular",
         email: "jhondoe@email.com",
         password: "Jo1qasaa",
@@ -100,7 +94,7 @@ describe("POST /signup", () => {
     await request(app)
       .post("/signup")
       .send({
-        username: "mana",
+        username: "manan",
         role: "admin",
         email: "jhondoe@email.com",
         password: "johndoejohndoe1",
@@ -110,7 +104,7 @@ describe("POST /signup", () => {
     await request(app)
       .post("/signup")
       .send({
-        username: "mana",
+        username: "manan",
         role: "admin",
         email: "jhondoe@email.com",
         password: "1johndoejohndoE",
@@ -122,7 +116,7 @@ describe("POST /signup", () => {
     await request(app)
       .post("/signup")
       .send({
-        username: "mena",
+        username: "menan",
         role: "admin",
         email: "jhondoe@email.com",
         password: "JOHNDOEJOHNDOE1",
@@ -132,7 +126,7 @@ describe("POST /signup", () => {
     await request(app)
       .post("/signup")
       .send({
-        username: "mena",
+        username: "menan",
         role: "admin",
         email: "jhondoe@email.com",
         password: "Johndoejohndoe1",
@@ -166,7 +160,7 @@ describe("POST /signup", () => {
     await request(app)
       .post("/signup")
       .send({
-        username: "jane",
+        username: "janed",
         role: "admin",
         email: "jhondoe@email.com",
         password: "Johndoejohndoe1",
@@ -209,9 +203,9 @@ describe("POST /login", () => {
     await request(app)
       .post("/login")
       .send({
-        username: "garrus",
+        username: "regularuser",
       })
-      .expect(404);
+      .expect(400);
   });
 
   it("should NOT login a user that doesnt exist", async () => {
@@ -225,32 +219,22 @@ describe("POST /login", () => {
   });
 
   it("should successfully login a user account", async () => {
-    await request(app)
-      .post("/signup")
-      .send({
-        username: "garrus",
-        role: "admin",
-        email: "jhondoe@email.com",
-        password: "Johndoejohndoe1",
-      })
-      .expect(201);
-
     const response = await request(app)
       .post("/login")
       .send({
-        username: "garrus",
-        password: "Johndoejohndoe1",
+        username: "regularuser",
+        password: "Testtest1",
       })
       .expect(201);
 
     expect(response.body).to.include({
-      username: "garrus",
-      email: "jhondoe@email.com",
-      role: "admin",
+      username: "regularuser",
+      email: "test@test.es",
+      role: "regular",
     });
 
     const token = generateAccessToken({
-      username: "garrus",
+      username: "regularuser",
     });
 
     expect(response.body.accessToken).to.be.equal(token);
@@ -258,24 +242,6 @@ describe("POST /login", () => {
 });
 
 describe("GET /account", () => {
-  const testAccount = {
-    username: "testing",
-    email: "test@test.es",
-    password: "Testtest1",
-  };
-
-  let token: string = "";
-
-  beforeEach(async () => {
-    await request(app).post("/signup").send(testAccount);
-    await request(app)
-      .post("/login")
-      .send(testAccount)
-      .then((res) => {
-        token = res.body.accessToken;
-      });
-  });
-
   it("does NOT get the account information if not logged in", async () => {
     await request(app)
       .get("/account")
@@ -284,46 +250,24 @@ describe("GET /account", () => {
   });
 
   it("gets the account information when logged in", async () => {
-    await request(app)
+    const response = await request(app)
       .get("/account")
-      .set({ Authorization: `Bearer ${token}` })
-      .then((res) => {
-        expect(res.status).to.be.equal(200);
-        expect(res.body.username).to.be.equal("testing");
-        expect(res.body.email).to.be.equal("test@test.es");
-        expect(res.body.role).to.be.equal("regular");
-        expect(res.body.products.length).to.be.equal(0);
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(200);
+
+      expect(response.body).to.include({
+        username: "regularuser",
+        email: "test@test.es",
+        role: "regular",
       });
   });
 });
 
 describe("PATCH /account", () => {
-  const testAccount = {
-    username: "tali1",
-    email: "test@test.es",
-    password: "Testtest1",
-  };
-
-  let token: string = "";
-
-  beforeEach(async () => {
-    await request(app).post("/signup").send(testAccount);
-    await request(app)
-      .post("/login")
-      .send(testAccount)
-      .then((res) => {
-        token = res.body.accessToken;
-      });
-  });
-
-  afterEach(async () => {
-    await Account.deleteMany();
-  });
-
   it("does NOT allow an invalid change in the account", async () => {
     await request(app)
       .patch("/account")
-      .set({ Authorization: `Bearer ${token}` })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send({
         updates: {
           role: "admin",
@@ -340,7 +284,7 @@ describe("PATCH /account", () => {
   it("does NOT allow an invalid change of the username", async () => {
     await request(app)
       .patch("/account")
-      .set({ Authorization: `Bearer ${token}` })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send({
         updates: {
           username: "nul",
@@ -354,7 +298,7 @@ describe("PATCH /account", () => {
   it("does NOT allow an invalid change of the email", async () => {
     await request(app)
       .patch("/account")
-      .set({ Authorization: `Bearer ${token}` })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send({
         updates: {
           email: "nul",
@@ -368,7 +312,7 @@ describe("PATCH /account", () => {
   it("does NOT allow an invalid change of the password", async () => {
     await request(app)
       .patch("/account")
-      .set({ Authorization: `Bearer ${token}` })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send({
         updates: {
           password: "nul",
@@ -382,7 +326,7 @@ describe("PATCH /account", () => {
   it("allows the change of the username", async () => {
     await request(app)
       .patch("/account")
-      .set({ Authorization: `Bearer ${token}` })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send({
         updates: {
           username: "tali2",
@@ -397,7 +341,7 @@ describe("PATCH /account", () => {
   it("allows the change of the email", async () => {
     await request(app)
       .patch("/account")
-      .set({ Authorization: `Bearer ${token}` })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send({
         updates: {
           email: "test2@test.es",
@@ -412,7 +356,7 @@ describe("PATCH /account", () => {
   it("allows the change of the password", async () => {
     await request(app)
       .patch("/account")
-      .set({ Authorization: `Bearer ${token}` })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send({
         updates: {
           password: "Testtest2",
@@ -423,7 +367,7 @@ describe("PATCH /account", () => {
         await request(app)
           .post("/login")
           .send({
-            username: "tali1",
+            username: "regularuser",
             email: "test@test.es",
             password: "Testtest2",
           })
@@ -433,28 +377,10 @@ describe("PATCH /account", () => {
 });
 
 describe("DELETE /account", () => {
-  const testAccount = {
-    username: "tali1",
-    email: "test@test.es",
-    password: "Testtest1",
-  };
-
-  let token: string = "";
-
-  beforeEach(async () => {
-    await request(app).post("/signup").send(testAccount);
-    await request(app)
-      .post("/login")
-      .send(testAccount)
-      .then((res) => {
-        token = res.body.accessToken;
-      });
-  });
-
   it("does NOT delete an account without the correct password given", async () => {
     await request(app)
       .delete("/account")
-      .set({ Authorization: `Bearer ${token}` })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send({
         password: "IncorrectPassword1",
       })
@@ -464,7 +390,7 @@ describe("DELETE /account", () => {
   it("deletes an account correctly when the password is given", async () => {
     await request(app)
       .delete("/account")
-      .set({ Authorization: `Bearer ${token}` })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
       .send({
         password: "Testtest1",
       })

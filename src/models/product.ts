@@ -70,7 +70,7 @@ const ProductSchema = new Schema<ProductInterface>({
   },
   nutriScore: {
     type: String,
-    enum: ['A', 'B', 'C', 'D', 'E'],
+    enum: ['A', 'B', 'C', 'D', 'E', ''],
     trim: true,
   }
 });

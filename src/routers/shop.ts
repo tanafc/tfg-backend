@@ -55,7 +55,7 @@ shopRouter.post("/shop", jwt.authenticateToken, async (req, res) => {
     const shop = await Shop.findOne(filter);
 
     if (shop) {
-      return res.send(400).send({
+      return res.status(409).send({
         error: `The supermarket ${shop.name} already exists.`,
       });
     }
@@ -104,6 +104,12 @@ shopRouter.post("/shop/location", jwt.authenticateToken, async (req, res) => {
 
 // Only for Admin role
 shopRouter.delete("/shop", jwt.authenticateToken, async (req, res) => {
+  const account = res.locals.auth;
+
+  if (account.role !== "admin") {
+    return res.status(401).send();
+  }
+
   if (!req.query.name) {
     return res.status(400).send({
       error: "A name needs to be provided",
@@ -126,11 +132,18 @@ shopRouter.delete("/shop", jwt.authenticateToken, async (req, res) => {
 
 // Only for Admin role
 shopRouter.patch("/shop", jwt.authenticateToken, async (req, res) => {
+  const account = res.locals.auth;
+
+  if (account.role !== "admin") {
+    return res.status(401).send();
+  }
+
   if (!req.query.name) {
     return res.status(400).send({
       error: "A name needs to be provided",
     });
   }
+
   const allowedUpdates = ["name", "products", "locations"];
   const actualUpdates = Object.keys(req.body);
   const isValidUpdate = actualUpdates.every((update) =>

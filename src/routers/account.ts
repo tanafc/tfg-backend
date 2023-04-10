@@ -235,7 +235,7 @@ accountRouter.delete("/account", jwt.authenticateToken, async (req, res) => {
       return res.status(401).send({ error: "Incorrect password" });
     }
 
-    const deletedAccount = Account.findOneAndDelete({
+    const deletedAccount = await Account.findOneAndDelete({
       username: account.username,
     });
 

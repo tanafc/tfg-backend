@@ -76,39 +76,58 @@ productRouter.post("/products", jwt.authenticateToken, async (req, res) => {
   const account = res.locals.auth;
 
   try {
-    const shop = Shop.findOne({ name: req.body.shop });
+    const shop = await Shop.findOne({ name: req.body.shop });
 
     if (!shop) {
       return res.status(404).send({ error: "Shop not found" });
     }
 
-    const update = new Update({
+    const product = await Product.findOne({ barcode: req.body.barcode });
+
+    if (product) {
+      return res
+        .status(409)
+        .send({
+          error: `A product with barcode ${req.body.barcode} was already found`,
+          product,
+        });
+    }
+
+    const newUpdate = new Update({
       price: req.body.price,
       date: Date.now(),
       shop: shop,
       user: account,
     });
 
-    const nutrients = new Nutrients(req.body.nutrients);
+    const newNutrients = new Nutrients(req.body.nutrients);
 
     const newProduct = new Product({
       barcode: req.body.barcode,
       name: req.body.name,
       brand: req.body.brand,
       image: req.body.image,
-      record: [update],
+      record: [newUpdate],
       shops: [shop],
       ingredients: req.body.ingredients,
-      nutrients: nutrients,
+      nutrients: newNutrients,
       beverage: req.body.beverage,
       nutriScore: req.body.nutriScore ?? "",
     });
 
-    Account.updateOne(account, { $push: { products: newProduct._id } });
-    Shop.updateOne(shop, { $push: { products: newProduct._id } });
+    await Account.updateOne(
+      { username: account.username },
+      { $push: { products: newProduct._id } }
+    );
+
+    await Shop.updateOne(
+      { name: shop.name },
+      { $push: { products: newProduct._id } }
+    );
 
     await newProduct.save();
-    await nutrients.save();
+    await newNutrients.save();
+    await newUpdate.save();
 
     return res.status(201).send(newProduct);
   } catch (error) {

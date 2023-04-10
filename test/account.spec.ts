@@ -257,6 +257,46 @@ describe("POST /login", () => {
   });
 });
 
+describe("GET /account", () => {
+  const testAccount = {
+    username: "testing",
+    email: "test@test.es",
+    password: "Testtest1",
+  };
+
+  let token: string = "";
+
+  beforeEach(async () => {
+    await request(app).post("/signup").send(testAccount);
+    await request(app)
+      .post("/login")
+      .send(testAccount)
+      .then((res) => {
+        token = res.body.accessToken;
+      });
+  });
+
+  it("does NOT get the account information if not logged in", async () => {
+    await request(app)
+      .get("/account")
+      .set({ Authorization: `Bearer ` })
+      .expect(401);
+  });
+
+  it("gets the account information when logged in", async () => {
+    await request(app)
+      .get("/account")
+      .set({ Authorization: `Bearer ${token}` })
+      .then((res) => {
+        expect(res.status).to.be.equal(200);
+        expect(res.body.username).to.be.equal("testing");
+        expect(res.body.email).to.be.equal("test@test.es");
+        expect(res.body.role).to.be.equal("regular");
+        expect(res.body.products.length).to.be.equal(0);
+      });
+  });
+});
+
 describe("PATCH /account", () => {
   const testAccount = {
     username: "tali1",

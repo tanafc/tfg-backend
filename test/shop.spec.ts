@@ -5,33 +5,34 @@ import { after, before } from "mocha";
 import { Shop } from "../src/models/shop";
 // import { Account } from "../src/models/account";
 
-const testAccount = {
-  username: "shoptester",
-  email: "test@test.es",
-  password: "Testtest1",
-};
-
-let token: string = "";
-
-before(async () => {
-  await request(app).post("/signup").send(testAccount);
-  await request(app)
-    .post("/login")
-    .send(testAccount)
-    .then((res) => {
-      token = res.body.accessToken;
-    });
-});
-
-after(async () => {
-    await request(app)
-      .delete("/account")
-      .set({ Authorization: `Bearer ${token}` })
-      .send(testAccount);
-  // Account.deleteMany();
-});
 
 describe("POST /shop", () => {
+  const testAccount = {
+    username: "shoptester",
+    email: "test@test.es",
+    password: "Testtest1",
+  };
+  
+  let token: string = "";
+  
+  before(async () => {
+    await request(app).post("/signup").send(testAccount);
+    await request(app)
+      .post("/login")
+      .send(testAccount)
+      .then((res) => {
+        token = res.body.accessToken;
+      });
+  });
+  
+  after(async () => {
+      await request(app)
+        .delete("/account")
+        .set({ Authorization: `Bearer ${token}` })
+        .send(testAccount);
+    // Account.deleteMany();
+  });
+
   afterEach(async () => {
     await Shop.deleteMany();
   });

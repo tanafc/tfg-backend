@@ -1,10 +1,11 @@
-import { Schema, model } from 'mongoose';
+import { Schema, Types, model } from 'mongoose';
 
 
 /**
  * Interface for Nutrients
  */
 interface NutrientsInterface {
+  product: Types.ObjectId;
   energy: number,
   totalFat: number,
   saturatedFat: number,
@@ -26,6 +27,11 @@ interface NutrientsInterface {
 
 
 const NutrientsSchema = new Schema<NutrientsInterface>({
+  product: {
+    type: Schema.Types.ObjectId,
+    required: [true, "A product is required"],
+    ref: "Product",
+  },
   energy: {
     type: Number,
     required: true,

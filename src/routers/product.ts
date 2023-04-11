@@ -5,6 +5,7 @@ import { Update } from "../models/update";
 import { Shop } from "../models/shop";
 import { Nutrients } from "../models/nutrients";
 import { Account } from "../models/account";
+import mongoose from "mongoose";
 
 export const productRouter = express.Router();
 
@@ -85,24 +86,29 @@ productRouter.post("/products", jwt.authenticateToken, async (req, res) => {
     const product = await Product.findOne({ barcode: req.body.barcode });
 
     if (product) {
-      return res
-        .status(409)
-        .send({
-          error: `A product with barcode ${req.body.barcode} was already found`,
-          product,
-        });
+      return res.status(409).send({
+        error: `A product with barcode ${req.body.barcode} was already found`,
+        product,
+      });
     }
+
+    const newProductId = new mongoose.Types.ObjectId();
 
     const newUpdate = new Update({
       price: req.body.price,
       date: Date.now(),
+      product: newProductId,
       shop: shop,
       user: account,
     });
 
-    const newNutrients = new Nutrients(req.body.nutrients);
+    const newNutrients = new Nutrients({
+      product: newProductId,
+      ...req.body.nutrients,
+    });
 
     const newProduct = new Product({
+      _id: newProductId,
       barcode: req.body.barcode,
       name: req.body.name,
       brand: req.body.brand,

@@ -76,6 +76,7 @@ export const updateOfProductOne = {
   _id: updateOfProductOneId,
   price: 3.4,
   date: Date.now(),
+  product: productOneId,
   shop: shopOneId,
   user: regularUserId,
 };
@@ -84,12 +85,14 @@ export const updateOfProductTwo = {
   _id: updateOfProductTwoId,
   price: 2.1,
   date: Date.now(),
+  product: productTwoId,
   shop: shopTwoId,
   user: adminUserId,
 };
 
 export const nutrientsOfProductOne = {
   _id: nutrientsOfProductOneId,
+  product: productOneId,
   energy: 497,
   totalFat: 25.8,
   saturatedFat: 3.1,
@@ -102,6 +105,7 @@ export const nutrientsOfProductOne = {
 
 export const nutrientsOfProductTwo = {
   _id: nutrientsOfProductTwoId,
+  product: productTwoId,
   energy: 476,
   totalFat: 20,
   saturatedFat: 5.4,
@@ -151,20 +155,20 @@ export const productTwo = {
 };
 
 export const setupDatabase = async () => {
-  await Account.deleteMany();
-  await Shop.deleteMany();
-  await Product.deleteMany();
-  await Nutrients.deleteMany();
-  await Update.deleteMany();
-
-  await new Account(adminUser).save();
-  await new Account(regularUser).save();
-  await new Shop(shopOne).save();
-  await new Shop(shopTwo).save();
-  await new Product(productOne).save();
-  await new Product(productTwo).save();
-  await new Nutrients(nutrientsOfProductOne).save();
-  await new Nutrients(nutrientsOfProductTwo).save();
-  await new Update(updateOfProductOne).save();
-  await new Update(updateOfProductTwo).save();
+    await Account.deleteMany();
+    await Shop.deleteMany();
+    await Product.deleteMany();
+    await Nutrients.deleteMany();
+    await Update.deleteMany();
+  
+    await new Account(adminUser).save();
+    await new Account(regularUser).save();
+    await new Shop(shopOne).save();
+    await new Shop(shopTwo).save();
+    await new Product(productOne).save();
+    await new Product(productTwo).save();
+    await new Nutrients(nutrientsOfProductOne).save();
+    await new Nutrients(nutrientsOfProductTwo).save();
+    await new Update(updateOfProductOne).save();
+    await new Update(updateOfProductTwo).save();
 };

@@ -2,7 +2,13 @@ import { expect } from "chai";
 import * as request from "supertest";
 import app from "../src/app";
 import "../src/database/mongoose";
-import { adminUserToken, regularUserToken, setupDatabase } from "./fixtures/db";
+import {
+  adminUserToken,
+  regularUserToken,
+  setupDatabase,
+  shopTwoId,
+} from "./fixtures/db";
+import { Shop } from "../src/models/shop";
 
 beforeEach(setupDatabase);
 
@@ -35,6 +41,10 @@ describe("POST /shops", () => {
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(newShop)
       .expect(201);
+
+    const shop = await Shop.findOne({ name: "Dia" });
+    expect(shop).not.to.be.null;
+    expect(shop!.name).to.equal("Dia");
   });
 
   it("does NOT create a shop with the same name as other", async () => {
@@ -51,7 +61,27 @@ describe("POST /shops", () => {
 });
 
 describe("GET /shops", () => {
-  it("gets a shop stored in the database", async () => {
+  it("gets a shop stored in the database by its id", async () => {
+    const response = await request(app)
+      .get(`/shops/${shopTwoId}`)
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(200);
+
+    expect(response.body).to.include({
+      name: "Alcampo",
+    });
+
+    expect(response.body).to.have.property("products");
+    expect(response.body).to.have.property("locations");
+    expect(response.body.locations.length).to.be.equal(1);
+    expect(response.body.locations[0]).to.include({
+      latitude: 8,
+      longitude: 8,
+      location: "Santa Cruz",
+    });
+  });
+
+  it("gets a shop stored in the database by its name", async () => {
     const response = await request(app)
       .get("/shops")
       .set({ Authorization: `Bearer ${regularUserToken}` })

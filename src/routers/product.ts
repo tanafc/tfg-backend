@@ -1,17 +1,17 @@
 import * as express from "express";
-import * as jwt from "../middleware/authJwt";
-import { Product } from "../models/product";
-import { Update } from "../models/update";
-import { Shop } from "../models/shop";
-import { Nutrients } from "../models/nutrients";
-import { Account } from "../models/account";
 import mongoose from "mongoose";
+import * as jwt from "../middleware/authJwt";
+import { Account } from "../models/account";
+import { Nutrients } from "../models/nutrients";
+import { Product } from "../models/product";
+import { Shop } from "../models/shop";
+import { Update } from "../models/update";
 
 export const productRouter = express.Router();
 
-productRouter.get("/products", jwt.authenticateToken, async (req, res) => {
+productRouter.get("/product", jwt.authenticateToken, async (req, res) => {
   const filter = req.query.barcode
-    ? { name: req.query.barcode.toString() }
+    ? { barcode: req.query.barcode.toString() }
     : undefined;
 
   if (!filter) {
@@ -24,6 +24,28 @@ productRouter.get("/products", jwt.authenticateToken, async (req, res) => {
     if (!product) {
       return res.status(404).send();
     }
+
+    await product.populate("nutrients", "-_id -__v -product");
+    await product.populate("record", "price date shop");
+    await Shop.populate(product, { path: "record.shop", select: "name" });
+
+    return res.send(product);
+  } catch (error) {
+    return res.status(500).send();
+  }
+});
+
+productRouter.get("/product/:id", jwt.authenticateToken, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).send();
+    }
+
+    await product.populate("nutrients", "-_id -__v -product");
+    await product.populate("record", "price date shop");
+    await Shop.populate(product, { path: "record.shop", select: "name" });
 
     return res.send(product);
   } catch (error) {
@@ -45,29 +67,12 @@ productRouter.get("/products", jwt.authenticateToken, async (req, res) => {
       { name: `/${filter}/i` },
       "barcode name brand image"
     );
-    console.log(products);
 
     if (!products) {
       return res.status(404).send();
     }
 
     return res.send(products);
-  } catch (error) {
-    return res.status(500).send();
-  }
-});
-
-productRouter.get("/products/:id", jwt.authenticateToken, async (req, res) => {
-  const _id = req.params._id;
-
-  try {
-    const product = await Product.findById(_id);
-
-    if (!product) {
-      return res.status(404).send();
-    }
-
-    return res.send(product);
   } catch (error) {
     return res.status(500).send();
   }

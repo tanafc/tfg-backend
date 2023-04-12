@@ -18,6 +18,7 @@ const UpdateSchema = new Schema<UpdateInterface>({
   },
   date: {
     type: Date,
+    default: Date.now(),
     required: [true, "A date is required"],
   },
   product: {

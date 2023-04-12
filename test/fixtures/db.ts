@@ -45,7 +45,7 @@ export const adminUser = {
 };
 
 export const shopOne = {
-  _id: new mongoose.Types.ObjectId(),
+  _id: shopOneId,
   name: "Carrefour",
   locations: [
     {
@@ -59,7 +59,7 @@ export const shopOne = {
 };
 
 export const shopTwo = {
-  _id: new mongoose.Types.ObjectId(),
+  _id: shopTwoId,
   name: "Alcampo",
   locations: [
     {
@@ -75,7 +75,7 @@ export const shopTwo = {
 export const updateOfProductOne = {
   _id: updateOfProductOneId,
   price: 3.4,
-  date: Date.now(),
+  date: '2023-04-12T13:40:29.431Z',
   product: productOneId,
   shop: shopOneId,
   user: regularUserId,
@@ -84,7 +84,7 @@ export const updateOfProductOne = {
 export const updateOfProductTwo = {
   _id: updateOfProductTwoId,
   price: 2.1,
-  date: Date.now(),
+  date: '2023-05-12T13:40:29.431Z',
   product: productTwoId,
   shop: shopTwoId,
   user: adminUserId,

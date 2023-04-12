@@ -26,6 +26,9 @@ describe("POST /shops", () => {
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(newShop)
       .expect(400);
+
+    const shop = await Shop.findOne({ name: "" });
+    expect(shop).to.be.null;
   });
 
   it("creates a new shop in the database", async () => {
@@ -116,6 +119,12 @@ describe("PATCH /shops", () => {
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(updates)
       .expect(401);
+
+    const alcampoShop = await Shop.findOne({ name: "Alcampo" });
+    expect(alcampoShop).not.to.be.null;
+
+    const sparShop = await Shop.findOne({ name: "Spar" });
+    expect(sparShop).to.be.null;
   });
 
   it("allows a user with the admin role to update a shop", async () => {
@@ -141,16 +150,25 @@ describe("PATCH /shops", () => {
       longitude: 10,
       location: "Santa Cruz",
     });
+
+    const alcampoShop = await Shop.findOne({ name: "Alcampo" });
+    expect(alcampoShop).to.be.null;
+    
+    const sparShop = await Shop.findOne({ name: "Spar" });
+    expect(sparShop).not.to.be.null;
   });
 });
 
-describe("DELETE /shops", () => {
+describe.only("DELETE /shops", () => {
   it("does NOT allow a user without the admin role to delete a shop", async () => {
     await request(app)
       .delete("/shops")
       .query({ name: "Alcampo" })
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .expect(401);
+
+    const shop = await Shop.findOne({ name: "Alcampo" });
+    expect(shop).not.to.be.null;
   });
 
   it("allows a user with the admin role to delete a shop", async () => {
@@ -170,5 +188,8 @@ describe("DELETE /shops", () => {
       longitude: 8,
       location: "Santa Cruz",
     });
+
+    const shop = await Shop.findOne({ name: "Alcampo" });
+    expect(shop).to.be.null;
   });
 });

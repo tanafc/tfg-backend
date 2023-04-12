@@ -2,7 +2,13 @@ import { expect } from "chai";
 import * as request from "supertest";
 import app from "../src/app";
 import "../src/database/mongoose";
-import { productOneId, productThreeId, productTwoId, regularUserToken, setupDatabase } from "./fixtures/db";
+import {
+  productOneId,
+  productThreeId,
+  productTwoId,
+  regularUserToken,
+  setupDatabase,
+} from "./fixtures/db";
 import { Product } from "../src/models/product";
 
 beforeEach(setupDatabase);
@@ -94,6 +100,46 @@ describe("POST /products", () => {
     const product = await Product.findOne({ barcode: "712345760891" });
     expect(product).not.to.be.null;
     expect(product!.name).not.to.equal("Munchitos Original");
+  });
+
+  it("does NOT store a new product with a nonexistent shop", async () => {
+    const newProduct = {
+      barcode: "612345760891",
+      name: "Munchitos Original",
+      brand: "Matutano",
+      image: "null",
+      price: 1.47,
+      shop: "Dummy",
+      ingredients: [
+        "harina de trigo",
+        "grasa de palma",
+        "azucar",
+        "aceite de nabina",
+      ],
+      nutrients: {
+        energy: 476,
+        totalFat: 20,
+        saturatedFat: 5.4,
+        totalCarbohydrates: 68,
+        totalSugars: 38,
+        protein: 5.3,
+        sodium: 0.73,
+        fibre: 2.7,
+      },
+      beverage: false,
+      nutriScore: "D",
+    };
+
+    const response = await request(app)
+      .post("/products")
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .send(newProduct)
+      .expect(404);
+
+    expect(response.body.error).to.equal("Shop not found");
+
+    const product = await Product.findOne({ barcode: "612345760891" });
+    expect(product).to.be.null;
   });
 });
 

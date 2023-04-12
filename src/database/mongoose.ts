@@ -1,6 +1,7 @@
-require('dotenv').config();
+import * as dotenv from 'dotenv';
 import * as mongoose from 'mongoose';
 
+dotenv.config();
 
 const { MONGO_DB_URI, MONGO_DB_URI_TEST, NODE_ENV } = process.env
 

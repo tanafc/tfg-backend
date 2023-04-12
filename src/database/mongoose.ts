@@ -21,7 +21,7 @@ mongoose.set('strictQuery', true);
 /**
  * Connects to the Mongo server
  */
-mongoose.connect(connectionUrl || 'mongodb://127.0.0.1:27017', {
+mongoose.connect(connectionUrl, {
   autoIndex: true,
 }).then(() => {
   console.log('Connection to MongoDB server established');

@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      MONGO_DB_URI: ${{ vars.MONGO_DB_URI }}
+      MONGO_DB_URI_TEST: ${{ vars.MONGO_DB_URI_TEST }}
     strategy:
       matrix:
         node-version: [14.x, 16.x, 18.x]

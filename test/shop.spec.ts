@@ -153,13 +153,13 @@ describe("PATCH /shops", () => {
 
     const alcampoShop = await Shop.findOne({ name: "Alcampo" });
     expect(alcampoShop).to.be.null;
-    
+
     const sparShop = await Shop.findOne({ name: "Spar" });
     expect(sparShop).not.to.be.null;
   });
 });
 
-describe.only("DELETE /shops", () => {
+describe("DELETE /shops", () => {
   it("does NOT allow a user without the admin role to delete a shop", async () => {
     await request(app)
       .delete("/shops")

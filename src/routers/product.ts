@@ -54,9 +54,7 @@ productRouter.get("/product/:id", jwt.authenticateToken, async (req, res) => {
 });
 
 productRouter.get("/products", jwt.authenticateToken, async (req, res) => {
-  const filter = req.query.name
-    ? { name: req.query.name.toString() }
-    : undefined;
+  const filter = req.query.name ?? undefined
 
   if (!filter) {
     res.status(404).send("A name for products needs to be provided");
@@ -64,10 +62,10 @@ productRouter.get("/products", jwt.authenticateToken, async (req, res) => {
 
   try {
     const products = await Product.find(
-      { name: `/${filter}/i` },
+      { name: { $regex: filter, $options: 'i' } },
       "barcode name brand image"
     );
-
+    
     if (!products) {
       return res.status(404).send();
     }

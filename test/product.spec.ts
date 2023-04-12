@@ -2,7 +2,7 @@ import { expect } from "chai";
 import * as request from "supertest";
 import app from "../src/app";
 import "../src/database/mongoose";
-import { productTwoId, regularUserToken, setupDatabase } from "./fixtures/db";
+import { productOneId, productThreeId, productTwoId, regularUserToken, setupDatabase } from "./fixtures/db";
 import { Product } from "../src/models/product";
 
 beforeEach(setupDatabase);
@@ -182,6 +182,30 @@ describe("GET /product", () => {
 
     expect(response.body.record[0].shop).to.include({
       name: "Alcampo",
+    });
+  });
+
+  it("gets products with similar name", async () => {
+    const response = await request(app)
+      .get("/products")
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .query({ name: "dori" })
+      .expect(200);
+
+    expect(response.body.length).to.equal(2);
+
+    expect(response.body[0]).to.include({
+      barcode: "712345760891",
+      name: "Doritos Original",
+      brand: "Doritos",
+      image: "null",
+    });
+
+    expect(response.body[1]).to.include({
+      barcode: "712345760818",
+      name: "Doritos Nacho Cheese",
+      brand: "Doritos",
+      image: "null",
     });
   });
 });

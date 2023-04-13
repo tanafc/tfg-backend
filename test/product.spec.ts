@@ -2,14 +2,18 @@ import { expect } from "chai";
 import * as request from "supertest";
 import app from "../src/app";
 import "../src/database/mongoose";
+import { Account } from "../src/models/account";
+import { Product } from "../src/models/product";
+import { Shop } from "../src/models/shop";
 import {
+  adminUserToken,
   productOneId,
-  productThreeId,
   productTwoId,
+  regularUserId,
   regularUserToken,
   setupDatabase,
+  shopOneId
 } from "./fixtures/db";
-import { Product } from "../src/models/product";
 
 beforeEach(setupDatabase);
 
@@ -253,5 +257,42 @@ describe("GET /product", () => {
       brand: "Doritos",
       image: "null",
     });
+  });
+});
+
+describe("DELETE /product", () => {
+  it("successfully deletes a product in the database with an admin token", async () => {
+    await request(app)
+      .delete("/product")
+      .query({ barcode: "712345760891" })
+      .set({ Authorization: `Bearer ${adminUserToken}` })
+      .expect(200);
+
+    const product = await Product.findById(productOneId);
+    expect(product).to.be.null;
+
+    const user = await Account.findById(regularUserId);
+    expect(user?.products).to.not.include(productOneId)
+
+    const shop = await Shop.findById(shopOneId);
+    expect(shop?.products).to.not.include(productOneId)
+  });
+
+  it("does NOT delete a product in the database with a regular token", async () => {
+    await request(app)
+      .delete("/product")
+      .query({ barcode: "712345760891" })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(401);
+
+    const product = await Product.findById(productOneId);
+    expect(product).to.not.be.null;
+    expect(product!.barcode).to.equal("712345760891");
+
+    const user = await Account.findById(regularUserId);
+    expect(user?.products).to.include(productOneId)
+
+    const shop = await Shop.findById(shopOneId);
+    expect(shop?.products).to.include(productOneId)
   });
 });

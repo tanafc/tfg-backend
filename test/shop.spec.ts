@@ -2,13 +2,13 @@ import { expect } from "chai";
 import * as request from "supertest";
 import app from "../src/app";
 import "../src/database/mongoose";
+import { Shop } from "../src/models/shop";
 import {
   adminUserToken,
   regularUserToken,
   setupDatabase,
   shopTwoId,
 } from "./fixtures/db";
-import { Shop } from "../src/models/shop";
 
 beforeEach(setupDatabase);
 

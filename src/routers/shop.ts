@@ -115,6 +115,7 @@ shopRouter.delete("/shops", jwt.authenticateToken, async (req, res) => {
       error: "A name needs to be provided",
     });
   }
+  
   try {
     const shop = await Shop.findOneAndDelete({
       name: req.query.name.toString(),

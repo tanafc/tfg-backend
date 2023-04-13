@@ -54,7 +54,7 @@ productRouter.get("/product/:id", jwt.authenticateToken, async (req, res) => {
 });
 
 productRouter.get("/products", jwt.authenticateToken, async (req, res) => {
-  const filter = req.query.name ?? undefined
+  const filter = req.query.name ?? undefined;
 
   if (!filter) {
     res.status(404).send("A name for products needs to be provided");
@@ -62,10 +62,10 @@ productRouter.get("/products", jwt.authenticateToken, async (req, res) => {
 
   try {
     const products = await Product.find(
-      { name: { $regex: filter, $options: 'i' } },
+      { name: { $regex: filter, $options: "i" } },
       "barcode name brand image"
     );
-    
+
     if (!products) {
       return res.status(404).send();
     }
@@ -141,5 +141,47 @@ productRouter.post("/products", jwt.authenticateToken, async (req, res) => {
     return res.status(201).send(newProduct);
   } catch (error) {
     return res.status(400).send(error);
+  }
+});
+
+productRouter.delete("/product", jwt.authenticateToken, async (req, res) => {
+  const user = res.locals.auth;
+
+  if (user.role !== "admin") {
+    return res.status(401).send();
+  }
+
+  if (!req.query.barcode) {
+    return res.status(400).send({
+      error: "A barcode needs to be provided",
+    });
+  }
+
+  try {
+    const product = await Product.findOneAndDelete({
+      barcode: req.query.barcode,
+    });
+
+    if (!product) {
+      return res.status(404).send();
+    }
+
+    await Nutrients.findByIdAndDelete(product.nutrients);
+    
+    await Promise.all(product.record.map(async (updateId) => {
+      const update = await Update.findByIdAndDelete(updateId);
+  
+      await Account.findByIdAndUpdate(update?.user, {
+        $pull: { products: product._id },
+      });
+  
+      await Shop.findByIdAndUpdate(update?.shop, {
+        $pull: { products: product._id },
+      });
+    }));
+
+    return res.send(product);
+  } catch (error) {
+    return res.status(400).send();
   }
 });

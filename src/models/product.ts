@@ -47,12 +47,6 @@ const ProductSchema = new Schema<ProductInterface>({
       required: true
     },
   ],
-  shops: [
-    {
-      type: Schema.Types.ObjectId, ref: 'Shop',
-      required: true
-    },
-  ],
   ingredients: [
     {
       type: String,

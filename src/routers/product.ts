@@ -26,8 +26,8 @@ productRouter.get("/products", jwt.authenticateToken, async (req, res) => {
     }
 
     await product.populate("nutrients", "-_id -__v -product");
-    await product.populate("record", "price date shop");
-    await Shop.populate(product, { path: "record.shop", select: "name" });
+    await product.populate("record", "_id price date shop");
+    await Shop.populate(product, { path: "record.shop", select: "_id name" });
 
     return res.send(product);
   } catch (error) {
@@ -44,8 +44,8 @@ productRouter.get("/products/:id", jwt.authenticateToken, async (req, res) => {
     }
 
     await product.populate("nutrients", "-_id -__v -product");
-    await product.populate("record", "price date shop");
-    await Shop.populate(product, { path: "record.shop", select: "name" });
+    await product.populate("record", "_id price date shop");
+    await Shop.populate(product, { path: "record.shop", select: "_id name" });
 
     return res.send(product);
   } catch (error) {
@@ -145,7 +145,7 @@ productRouter.post("/products", jwt.authenticateToken, async (req, res) => {
 });
 
 productRouter.post(
-  "/products/locations",
+  "/products/prices",
   jwt.authenticateToken,
   async (req, res) => {
     const user = res.locals.auth;
@@ -187,7 +187,7 @@ productRouter.post(
       newUpdate.save();
       product.save();
       shop.save();
-      user.save();     
+      user.save();
 
       return res.status(201).send({
         _id: newUpdate._id,
@@ -195,7 +195,7 @@ productRouter.post(
         date: newUpdate.date,
         product: product.barcode,
         shop: shop.name,
-        user: user.username
+        user: user.username,
       });
     } catch (error) {
       return res.status(400).send(error);

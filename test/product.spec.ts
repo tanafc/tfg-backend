@@ -150,7 +150,7 @@ describe("POST /products", () => {
   });
 });
 
-describe("POST /products/locations", () => {
+describe("POST /products/prices", () => {
   it("adds a new update of a product in a shop", async () => {
     const newUpdate = {
       price: 4.2,
@@ -159,7 +159,7 @@ describe("POST /products/locations", () => {
     }
     
     const response = await request(app)
-      .post("/products/locations")
+      .post("/products/prices")
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(newUpdate)
       .expect(201);
@@ -189,7 +189,7 @@ describe("POST /products/locations", () => {
     }
     
     const response = await request(app)
-      .post("/products/locations")
+      .post("/products/prices")
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(newUpdate)
       .expect(400);
@@ -204,7 +204,7 @@ describe("POST /products/locations", () => {
     }
     
     const response = await request(app)
-      .post("/products/locations")
+      .post("/products/prices")
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(newUpdate)
       .expect(400);
@@ -226,13 +226,13 @@ describe("POST /products/locations", () => {
     }
     
     await request(app)
-      .post("/products/locations")
+      .post("/products/prices")
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(newUpdateOne)
       .expect(404);
 
     await request(app)
-      .post("/products/locations")
+      .post("/products/prices")
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(newUpdateTwo)
       .expect(404);

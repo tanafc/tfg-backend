@@ -1,14 +1,17 @@
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
 import { generateAccessToken } from "../../src/middleware/authJwt";
 import { Account } from "../../src/models/account";
 import { Nutrients } from "../../src/models/nutrients";
 import { Product } from "../../src/models/product";
+import { Location } from "../../src/models/location";
 import { Shop } from "../../src/models/shop";
 import { Update } from "../../src/models/update";
 import { hashPassword } from "../../src/utils/hashPassword";
 
 export const regularUserId = new mongoose.Types.ObjectId();
 export const adminUserId = new mongoose.Types.ObjectId();
+export const locationOneId = new mongoose.Types.ObjectId();
+export const locationTwoId = new mongoose.Types.ObjectId();
 export const shopOneId = new mongoose.Types.ObjectId();
 export const shopTwoId = new mongoose.Types.ObjectId();
 export const updateOfProductOneId = new mongoose.Types.ObjectId();
@@ -47,38 +50,40 @@ export const adminUser = {
   products: [productTwoId],
 };
 
+export const locationOne = {
+  _id: locationOneId,
+  shop: shopOneId,
+  latitude: 9,
+  longitude: 10,
+  address: "Calle Vieja La Laguna",
+};
+
+export const locationTwo = {
+  _id: locationTwoId,
+  shop: shopTwoId,
+  latitude: 8,
+  longitude: 8,
+  address: "Santa Cruz",
+};
+
 export const shopOne = {
   _id: shopOneId,
   name: "Carrefour",
-  locations: [
-    {
-      _id: new mongoose.Types.ObjectId(),
-      latitude: 9,
-      longitude: 10,
-      location: "Calle Vieja La Laguna",
-    },
-  ],
+  locations: [locationOne],
   products: [productOneId],
 };
 
 export const shopTwo = {
   _id: shopTwoId,
   name: "Alcampo",
-  locations: [
-    {
-      _id: new mongoose.Types.ObjectId(),
-      latitude: 8,
-      longitude: 8,
-      location: "Santa Cruz",
-    },
-  ],
+  locations: [locationTwo],
   products: [productTwoId],
 };
 
 export const updateOfProductOne = {
   _id: updateOfProductOneId,
   price: 3.4,
-  date: '2023-04-12T13:40:29.431Z',
+  date: "2023-04-12T13:40:29.431Z",
   product: productOneId,
   shop: shopOneId,
   user: regularUserId,
@@ -87,7 +92,7 @@ export const updateOfProductOne = {
 export const updateOfProductTwo = {
   _id: updateOfProductTwoId,
   price: 2.1,
-  date: '2023-05-12T13:40:29.431Z',
+  date: "2023-05-12T13:40:29.431Z",
   product: productTwoId,
   shop: shopTwoId,
   user: adminUserId,
@@ -96,7 +101,7 @@ export const updateOfProductTwo = {
 export const updateOfProductThree = {
   _id: updateOfProductThreeId,
   price: 3.85,
-  date: '2023-06-12T13:40:29.431Z',
+  date: "2023-06-12T13:40:29.431Z",
   product: productThreeId,
   shop: shopTwoId,
   user: adminUserId,
@@ -203,23 +208,26 @@ export const productThree = {
 };
 
 export const setupDatabase = async () => {
-    await Account.deleteMany();
-    await Shop.deleteMany();
-    await Product.deleteMany();
-    await Nutrients.deleteMany();
-    await Update.deleteMany();
-  
-    await new Account(adminUser).save();
-    await new Account(regularUser).save();
-    await new Shop(shopOne).save();
-    await new Shop(shopTwo).save();
-    await new Product(productOne).save();
-    await new Product(productTwo).save();
-    await new Product(productThree).save();
-    await new Nutrients(nutrientsOfProductOne).save();
-    await new Nutrients(nutrientsOfProductTwo).save();
-    await new Nutrients(nutrientsOfProductThree).save();
-    await new Update(updateOfProductOne).save();
-    await new Update(updateOfProductTwo).save();
-    await new Update(updateOfProductThree).save();
+  await Account.deleteMany();
+  await Location.deleteMany();
+  await Shop.deleteMany();
+  await Product.deleteMany();
+  await Nutrients.deleteMany();
+  await Update.deleteMany();
+
+  await new Account(adminUser).save();
+  await new Account(regularUser).save();
+  await new Location(locationOne).save();
+  await new Location(locationTwo).save();
+  await new Shop(shopOne).save();
+  await new Shop(shopTwo).save();
+  await new Product(productOne).save();
+  await new Product(productTwo).save();
+  await new Product(productThree).save();
+  await new Nutrients(nutrientsOfProductOne).save();
+  await new Nutrients(nutrientsOfProductTwo).save();
+  await new Nutrients(nutrientsOfProductThree).save();
+  await new Update(updateOfProductOne).save();
+  await new Update(updateOfProductTwo).save();
+  await new Update(updateOfProductThree).save();
 };

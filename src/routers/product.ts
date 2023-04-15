@@ -9,7 +9,7 @@ import { Update } from "../models/update";
 
 export const productRouter = express.Router();
 
-productRouter.get("/product", jwt.authenticateToken, async (req, res) => {
+productRouter.get("/products", jwt.authenticateToken, async (req, res) => {
   const filter = req.query.barcode
     ? { barcode: req.query.barcode.toString() }
     : undefined;
@@ -35,7 +35,7 @@ productRouter.get("/product", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-productRouter.get("/product/:id", jwt.authenticateToken, async (req, res) => {
+productRouter.get("/products/:id", jwt.authenticateToken, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
 
@@ -53,7 +53,7 @@ productRouter.get("/product/:id", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-productRouter.get("/products", jwt.authenticateToken, async (req, res) => {
+productRouter.get("/products-all", jwt.authenticateToken, async (req, res) => {
   const filter = req.query.name ?? undefined;
 
   if (!filter) {
@@ -144,7 +144,66 @@ productRouter.post("/products", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-productRouter.delete("/product", jwt.authenticateToken, async (req, res) => {
+productRouter.post(
+  "/products/locations",
+  jwt.authenticateToken,
+  async (req, res) => {
+    const user = res.locals.auth;
+
+    const filterProduct = { barcode: req.body.barcode };
+    const filterShop = { name: req.body.shop };
+
+    if (!(filterProduct.barcode && filterShop.name)) {
+      return res
+        .status(400)
+        .send({ error: "A product and shop needs to be provided" });
+    }
+
+    try {
+      const product = await Product.findOne(filterProduct);
+      const shop = await Shop.findOne(filterShop);
+
+      if (!(product && shop)) {
+        return res.status(404).send();
+      }
+
+      const newUpdate = new Update({
+        price: req.body.price,
+        product: product._id,
+        shop: shop._id,
+        user: user._id,
+      });
+
+      product.record.push(newUpdate._id);
+
+      if (!user.products.includes(product._id)) {
+        user.products.push(product._id);
+      }
+
+      if (!shop.products.includes(product._id)) {
+        shop.products.push(product._id);
+      }
+
+      newUpdate.save();
+      product.save();
+      shop.save();
+      user.save();     
+
+      return res.status(201).send({
+        _id: newUpdate._id,
+        price: newUpdate.price,
+        date: newUpdate.date,
+        product: product.barcode,
+        shop: shop.name,
+        user: user.username
+      });
+    } catch (error) {
+      return res.status(400).send(error);
+    }
+  }
+);
+
+productRouter.delete("/products", jwt.authenticateToken, async (req, res) => {
   const user = res.locals.auth;
 
   if (user.role !== "admin") {
@@ -167,18 +226,20 @@ productRouter.delete("/product", jwt.authenticateToken, async (req, res) => {
     }
 
     await Nutrients.findByIdAndDelete(product.nutrients);
-    
-    await Promise.all(product.record.map(async (updateId) => {
-      const update = await Update.findByIdAndDelete(updateId);
-  
-      await Account.findByIdAndUpdate(update?.user, {
-        $pull: { products: product._id },
-      });
-  
-      await Shop.findByIdAndUpdate(update?.shop, {
-        $pull: { products: product._id },
-      });
-    }));
+
+    await Promise.all(
+      product.record.map(async (updateId) => {
+        const update = await Update.findByIdAndDelete(updateId);
+
+        await Account.findByIdAndUpdate(update?.user, {
+          $pull: { products: product._id },
+        });
+
+        await Shop.findByIdAndUpdate(update?.shop, {
+          $pull: { products: product._id },
+        });
+      })
+    );
 
     return res.send(product);
   } catch (error) {

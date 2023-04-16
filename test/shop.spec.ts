@@ -2,8 +2,8 @@ import { expect } from "chai";
 import * as request from "supertest";
 import app from "../src/app";
 import "../src/database/mongoose";
-import { Shop } from "../src/models/shop";
 import { Location } from "../src/models/location";
+import { Shop } from "../src/models/shop";
 import {
   adminUserToken,
   locationTwoId,

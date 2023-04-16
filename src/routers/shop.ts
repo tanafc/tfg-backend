@@ -1,4 +1,5 @@
 import * as express from "express";
+import mongoose from "mongoose";
 import * as jwt from "../middleware/authJwt";
 import { Location } from "../models/location";
 import { Shop } from "../models/shop";
@@ -24,7 +25,7 @@ shopRouter.get("/shops", jwt.authenticateToken, async (req, res) => {
     }
 
     await shop.populate("products", "-_id name barcode");
-    await shop.populate("locations");
+    await shop.populate("locations", "-shop");
 
     return res.send(shop);
   } catch (error) {
@@ -41,7 +42,7 @@ shopRouter.get("/shops/:id", jwt.authenticateToken, async (req, res) => {
     }
 
     await shop.populate("products", "-_id name barcode");
-    await shop.populate("locations");
+    await shop.populate("locations", "-shop");
 
     return res.send(shop);
   } catch (error) {
@@ -67,8 +68,15 @@ shopRouter.post("/shops", jwt.authenticateToken, async (req, res) => {
       });
     }
 
-    const newLocation = new Location(req.body.location);
+    const newShopId = new mongoose.Types.ObjectId();
+
+    const newLocation = new Location({
+      ...req.body.location,
+      shop: newShopId
+    });
+
     const newShop = new Shop({
+      _id: newShopId,
       name: req.body.name,
       locations: [newLocation._id],
     });
@@ -102,7 +110,10 @@ shopRouter.post("/shops/locations", jwt.authenticateToken, async (req, res) => {
       });
     }
 
-    const location = new Location(req.body);
+    const location = new Location({
+      ...req.body,
+      shop: shop._id
+    });
 
     shop.locations.push(location._id);
 

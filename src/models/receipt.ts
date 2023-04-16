@@ -1,9 +1,6 @@
 import { Schema, Types, model } from "mongoose";
 
-/**
- * Interface for Updates
- */
-interface UpdateInterface {
+interface ReceiptInterface {
   price: number;
   date: Date;
   product: Types.ObjectId;
@@ -11,7 +8,7 @@ interface UpdateInterface {
   user: Types.ObjectId;
 }
 
-const UpdateSchema = new Schema<UpdateInterface>({
+const ReceiptSchema = new Schema<ReceiptInterface>({
   price: {
     type: Number,
     required: [true, "A price is required"],
@@ -38,7 +35,4 @@ const UpdateSchema = new Schema<UpdateInterface>({
   },
 });
 
-/**
- * The final model for the Product database
- */
-export const Update = model<UpdateInterface>("Update", UpdateSchema);
+export const Receipt = model<ReceiptInterface>("Receipt", ReceiptSchema);

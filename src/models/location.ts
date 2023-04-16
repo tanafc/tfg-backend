@@ -11,6 +11,7 @@ const LocationSchema = new Schema<LocationInterface>({
   shop: {
     type: Schema.Types.ObjectId,
     ref: "Product",
+    required: true
   },
   latitude: {
     type: Number,

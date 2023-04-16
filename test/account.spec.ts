@@ -1,7 +1,7 @@
-import * as request from "supertest";
-import "../src/database/mongoose";
-import app from "../src/app";
 import { expect } from "chai";
+import * as request from "supertest";
+import app from "../src/app";
+import "../src/database/mongoose";
 import { generateAccessToken } from "../src/middleware/authJwt";
 import { regularUserToken, setupDatabase } from "./fixtures/db";
 

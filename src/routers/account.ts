@@ -14,7 +14,7 @@ accountRouter.get("/account", jwt.authenticateToken, async (_, res) => {
       username: account.username,
       email: account.email,
       role: account.role,
-      products: account.products,
+      receipts: account.receipts,
     });
   } catch (error) {
     return res.status(400).send(error);

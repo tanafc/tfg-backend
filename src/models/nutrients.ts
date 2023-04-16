@@ -1,30 +1,25 @@
-import { Schema, Types, model } from 'mongoose';
+import { Schema, Types, model } from "mongoose";
 
-
-/**
- * Interface for Nutrients
- */
 interface NutrientsInterface {
   product: Types.ObjectId;
-  energy: number,
-  totalFat: number,
-  saturatedFat: number,
-  transFat: number,
-  totalCarbohydrates: number,
-  totalSugars: number,
-  addedSugars: number,
-  protein: number,
-  salt: number,
-  sodium: number,
-  fibre: number,
-  perFruitVeg: number,
-  cholesterol: number,
-  dVitamin: number,
-  calcium: number,
-  iron: number,
-  potassium: number
+  energy: number;
+  totalFat: number;
+  saturatedFat: number;
+  transFat: number;
+  totalCarbohydrates: number;
+  totalSugars: number;
+  addedSugars: number;
+  protein: number;
+  salt: number;
+  sodium: number;
+  fibre: number;
+  perFruitVeg: number;
+  cholesterol: number;
+  dVitamin: number;
+  calcium: number;
+  iron: number;
+  potassium: number;
 }
-
 
 const NutrientsSchema = new Schema<NutrientsInterface>({
   product: {
@@ -92,7 +87,7 @@ const NutrientsSchema = new Schema<NutrientsInterface>({
   },
 });
 
-/**
- * The final model for the Nutrients database
- */
-export const Nutrients = model<NutrientsInterface>('Nutrients', NutrientsSchema);
+export const Nutrients = model<NutrientsInterface>(
+  "Nutrients",
+  NutrientsSchema
+);

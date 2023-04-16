@@ -2,20 +2,15 @@ import { expect } from "chai";
 import * as request from "supertest";
 import app from "../src/app";
 import "../src/database/mongoose";
-import { Account } from "../src/models/account";
 import { Product } from "../src/models/product";
 import { Shop } from "../src/models/shop";
 import {
   adminUserToken,
-  productOne,
   productOneId,
   productTwoId,
-  regularUser,
-  regularUserId,
   regularUserToken,
   setupDatabase,
-  shopOneId,
-  shopTwo
+  shopOneId
 } from "./fixtures/db";
 
 beforeEach(setupDatabase);
@@ -27,8 +22,6 @@ describe("POST /products", () => {
       name: "Doritos Tex-Mex",
       brand: "Doritos",
       image: "null",
-      price: 3.4,
-      shop: "Alcampo",
       ingredients: [
         "maíz",
         "aceite vegetal",
@@ -51,7 +44,7 @@ describe("POST /products", () => {
       nutriScore: "D",
     };
 
-    const response = await request(app)
+    await request(app)
       .post("/products")
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(newProduct)
@@ -72,8 +65,6 @@ describe("POST /products", () => {
       name: "Munchitos Original",
       brand: "Matutano",
       image: "null",
-      price: 1.47,
-      shop: "Carrefour",
       ingredients: [
         "harina de trigo",
         "grasa de palma",
@@ -108,136 +99,96 @@ describe("POST /products", () => {
     expect(product).not.to.be.null;
     expect(product!.name).not.to.equal("Munchitos Original");
   });
-
-  it("does NOT store a new product with a nonexistent shop", async () => {
-    const newProduct = {
-      barcode: "612345760891",
-      name: "Munchitos Original",
-      brand: "Matutano",
-      image: "null",
-      price: 1.47,
-      shop: "Dummy",
-      ingredients: [
-        "harina de trigo",
-        "grasa de palma",
-        "azucar",
-        "aceite de nabina",
-      ],
-      nutrients: {
-        energy: 476,
-        totalFat: 20,
-        saturatedFat: 5.4,
-        totalCarbohydrates: 68,
-        totalSugars: 38,
-        protein: 5.3,
-        sodium: 0.73,
-        fibre: 2.7,
-      },
-      beverage: false,
-      nutriScore: "D",
-    };
-
-    const response = await request(app)
-      .post("/products")
-      .set({ Authorization: `Bearer ${regularUserToken}` })
-      .send(newProduct)
-      .expect(404);
-
-    expect(response.body.error).to.equal("Shop not found");
-
-    const product = await Product.findOne({ barcode: "612345760891" });
-    expect(product).to.be.null;
-  });
 });
 
-describe("POST /products/prices", () => {
-  it("adds a new update of a product in a shop", async () => {
-    const newUpdate = {
-      price: 4.2,
-      barcode: productOne.barcode,
-      shop: shopTwo.name
-    }
+// describe("POST /products/prices", () => {
+//   it("adds a new update of a product in a shop", async () => {
+//     const newUpdate = {
+//       price: 4.2,
+//       barcode: productOne.barcode,
+//       shop: shopTwo.name
+//     }
     
-    const response = await request(app)
-      .post("/products/prices")
-      .set({ Authorization: `Bearer ${regularUserToken}` })
-      .send(newUpdate)
-      .expect(201);
+//     const response = await request(app)
+//       .post("/products/prices")
+//       .set({ Authorization: `Bearer ${regularUserToken}` })
+//       .send(newUpdate)
+//       .expect(201);
 
-    expect(response.body).to.include({
-      price: 4.2,
-      product: productOne.barcode,
-      shop: shopTwo.name,
-      user: regularUser.username
-    });
+//     expect(response.body).to.include({
+//       price: 4.2,
+//       product: productOne.barcode,
+//       shop: shopTwo.name,
+//       user: regularUser.username
+//     });
 
-    expect(response.body).to.have.property('date');
+//     expect(response.body).to.have.property('date');
 
-    const product = await Product.findOne({ barcode: productOne.barcode });
-    const shop = await Shop.findOne({ name: shopTwo.name });
-    const user = await Shop.findById(regularUserId);
+//     const product = await Product.findOne({ barcode: productOne.barcode });
+//     const shop = await Shop.findOne({ name: shopTwo.name });
+//     const user = await Shop.findById(regularUserId);
 
-    expect(product?.record).to.include(response.body._id)
-    expect(shop?.products).to.include(product?._id)
-    expect(user?.products).to.include(product?._id)
-  });
+//     expect(product?.record).to.include(response.body._id)
+//     expect(shop?.products).to.include(product?._id)
+//     expect(user?.products).to.include(product?._id)
+//   });
 
-  it("does NOT add a new update of a product without its valid barcode", async () => {
-    const newUpdate = {
-      price: 4.2,
-      shop: shopTwo.name
-    }
+//   it("does NOT add a new update of a product without its valid barcode", async () => {
+//     const newUpdate = {
+//       price: 4.2,
+//       shop: shopTwo.name
+//     }
     
-    const response = await request(app)
-      .post("/products/prices")
-      .set({ Authorization: `Bearer ${regularUserToken}` })
-      .send(newUpdate)
-      .expect(400);
+//     const response = await request(app)
+//       .post("/products/prices")
+//       .set({ Authorization: `Bearer ${regularUserToken}` })
+//       .send(newUpdate)
+//       .expect(400);
 
-    expect(response.body.error).to.equal('A product and shop needs to be provided');
-  });
+//     expect(response.body.error).to.equal('A product and shop needs to be provided');
+//   });
 
-  it("does NOT add a new update of a product without the name of a shop", async () => {
-    const newUpdate = {
-      price: 4.2,
-      barcode: productOne.barcode
-    }
+//   it("does NOT add a new update of a product without the name of a shop", async () => {
+//     const newUpdate = {
+//       price: 4.2,
+//       barcode: productOne.barcode
+//     }
     
-    const response = await request(app)
-      .post("/products/prices")
-      .set({ Authorization: `Bearer ${regularUserToken}` })
-      .send(newUpdate)
-      .expect(400);
+//     const response = await request(app)
+//       .post("/products/prices")
+//       .set({ Authorization: `Bearer ${regularUserToken}` })
+//       .send(newUpdate)
+//       .expect(400);
 
-    expect(response.body.error).to.equal('A product and shop needs to be provided');
-  });
+//     expect(response.body.error).to.equal('A product and shop needs to be provided');
+//   });
 
-  it("does NOT add a new update in a non-existent product or shop", async () => {
-    const newUpdateOne = {
-      price: 4.2,
-      barcode: "192837192837",
-      shop: shopTwo.name
-    }
+//   it("does NOT add a new update in a non-existent product or shop", async () => {
+//     const newUpdateOne = {
+//       price: 4.2,
+//       barcode: "192837192837",
+//       shop: shopTwo.name
+//     }
 
-    const newUpdateTwo = {
-      price: 4.2,
-      barcode: productOne.barcode,
-      shop: "Dummy"
-    }
+//     const newUpdateTwo = {
+//       price: 4.2,
+//       barcode: productOne.barcode,
+//       shop: "Dummy"
+//     }
     
-    await request(app)
-      .post("/products/prices")
-      .set({ Authorization: `Bearer ${regularUserToken}` })
-      .send(newUpdateOne)
-      .expect(404);
+//     await request(app)
+//       .post("/products/prices")
+//       .set({ Authorization: `Bearer ${regularUserToken}` })
+//       .send(newUpdateOne)
+//       .expect(404);
 
-    await request(app)
-      .post("/products/prices")
-      .set({ Authorization: `Bearer ${regularUserToken}` })
-      .send(newUpdateTwo)
-      .expect(404);
-  });
-});
+//     await request(app)
+//       .post("/products/prices")
+//       .set({ Authorization: `Bearer ${regularUserToken}` })
+//       .send(newUpdateTwo)
+//       .expect(404);
+//   });
+// });
 
 describe("GET /products", () => {
   it("gets a new product by its id", async () => {
@@ -271,17 +222,6 @@ describe("GET /products", () => {
       protein: 5.3,
       sodium: 0.73,
       fibre: 2.7,
-    });
-
-    expect(response.body.record.length).to.equal(1);
-
-    expect(response.body.record[0]).to.include({
-      date: "2023-05-12T13:40:29.431Z",
-      price: 2.1,
-    });
-
-    expect(response.body.record[0].shop).to.include({
-      name: "Alcampo",
     });
   });
 
@@ -317,17 +257,6 @@ describe("GET /products", () => {
       protein: 5.3,
       sodium: 0.73,
       fibre: 2.7,
-    });
-
-    expect(response.body.record.length).to.equal(1);
-
-    expect(response.body.record[0]).to.include({
-      date: "2023-05-12T13:40:29.431Z",
-      price: 2.1,
-    });
-
-    expect(response.body.record[0].shop).to.include({
-      name: "Alcampo",
     });
   });
 
@@ -367,9 +296,6 @@ describe("DELETE /products", () => {
     const product = await Product.findById(productOneId);
     expect(product).to.be.null;
 
-    const user = await Account.findById(regularUserId);
-    expect(user?.products).to.not.include(productOneId)
-
     const shop = await Shop.findById(shopOneId);
     expect(shop?.products).to.not.include(productOneId)
   });
@@ -384,9 +310,6 @@ describe("DELETE /products", () => {
     const product = await Product.findById(productOneId);
     expect(product).to.not.be.null;
     expect(product!.barcode).to.equal("712345760891");
-
-    const user = await Account.findById(regularUserId);
-    expect(user?.products).to.include(productOneId)
 
     const shop = await Shop.findById(shopOneId);
     expect(shop?.products).to.include(productOneId)

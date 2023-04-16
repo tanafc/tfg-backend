@@ -1,11 +1,11 @@
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 import { generateAccessToken } from "../../src/middleware/authJwt";
 import { Account } from "../../src/models/account";
+import { Location } from "../../src/models/location";
 import { Nutrients } from "../../src/models/nutrients";
 import { Product } from "../../src/models/product";
-import { Location } from "../../src/models/location";
+import { Receipt } from "../../src/models/receipt";
 import { Shop } from "../../src/models/shop";
-import { Update } from "../../src/models/update";
 import { hashPassword } from "../../src/utils/hashPassword";
 
 export const regularUserId = new mongoose.Types.ObjectId();
@@ -14,9 +14,9 @@ export const locationOneId = new mongoose.Types.ObjectId();
 export const locationTwoId = new mongoose.Types.ObjectId();
 export const shopOneId = new mongoose.Types.ObjectId();
 export const shopTwoId = new mongoose.Types.ObjectId();
-export const updateOfProductOneId = new mongoose.Types.ObjectId();
-export const updateOfProductTwoId = new mongoose.Types.ObjectId();
-export const updateOfProductThreeId = new mongoose.Types.ObjectId();
+export const receiptOfProductOneId = new mongoose.Types.ObjectId();
+export const receiptOfProductTwoId = new mongoose.Types.ObjectId();
+export const receiptOfProductThreeId = new mongoose.Types.ObjectId();
 export const nutrientsOfProductOneId = new mongoose.Types.ObjectId();
 export const nutrientsOfProductTwoId = new mongoose.Types.ObjectId();
 export const nutrientsOfProductThreeId = new mongoose.Types.ObjectId();
@@ -38,7 +38,7 @@ export const regularUser = {
   email: "test@test.es",
   password: hashPassword("Testtest1"),
   role: "regular",
-  products: [productOneId],
+  receipts: [receiptOfProductOneId],
 };
 
 export const adminUser = {
@@ -47,7 +47,7 @@ export const adminUser = {
   email: "test@test.es",
   password: hashPassword("Testtest1"),
   role: "admin",
-  products: [productTwoId],
+  receipts: [receiptOfProductTwoId, receiptOfProductThreeId],
 };
 
 export const locationOne = {
@@ -80,8 +80,8 @@ export const shopTwo = {
   products: [productTwoId],
 };
 
-export const updateOfProductOne = {
-  _id: updateOfProductOneId,
+export const receiptOfProductOne = {
+  _id: receiptOfProductOneId,
   price: 3.4,
   date: "2023-04-12T13:40:29.431Z",
   product: productOneId,
@@ -89,8 +89,8 @@ export const updateOfProductOne = {
   user: regularUserId,
 };
 
-export const updateOfProductTwo = {
-  _id: updateOfProductTwoId,
+export const receiptOfProductTwo = {
+  _id: receiptOfProductTwoId,
   price: 2.1,
   date: "2023-05-12T13:40:29.431Z",
   product: productTwoId,
@@ -98,8 +98,8 @@ export const updateOfProductTwo = {
   user: adminUserId,
 };
 
-export const updateOfProductThree = {
-  _id: updateOfProductThreeId,
+export const receiptOfProductThree = {
+  _id: receiptOfProductThreeId,
   price: 3.85,
   date: "2023-06-12T13:40:29.431Z",
   product: productThreeId,
@@ -152,7 +152,6 @@ export const productOne = {
   name: "Doritos Original",
   brand: "Doritos",
   image: "null",
-  record: [updateOfProductOneId],
   ingredients: [
     "maíz",
     "aceite vegetal",
@@ -172,7 +171,6 @@ export const productTwo = {
   name: "Oreo Original",
   brand: "Oreo",
   image: "null",
-  record: [updateOfProductTwoId],
   ingredients: [
     "harina de trigo",
     "grasa de palma",
@@ -190,7 +188,6 @@ export const productThree = {
   name: "Doritos Nacho Cheese",
   brand: "Doritos",
   image: "null",
-  record: [updateOfProductThreeId],
   ingredients: [
     "maíz",
     "aceite vegetal",
@@ -213,7 +210,7 @@ export const setupDatabase = async () => {
   await Shop.deleteMany();
   await Product.deleteMany();
   await Nutrients.deleteMany();
-  await Update.deleteMany();
+  await Receipt.deleteMany();
 
   await new Account(adminUser).save();
   await new Account(regularUser).save();
@@ -227,7 +224,7 @@ export const setupDatabase = async () => {
   await new Nutrients(nutrientsOfProductOne).save();
   await new Nutrients(nutrientsOfProductTwo).save();
   await new Nutrients(nutrientsOfProductThree).save();
-  await new Update(updateOfProductOne).save();
-  await new Update(updateOfProductTwo).save();
-  await new Update(updateOfProductThree).save();
+  await new Receipt(receiptOfProductOne).save();
+  await new Receipt(receiptOfProductTwo).save();
+  await new Receipt(receiptOfProductThree).save();
 };

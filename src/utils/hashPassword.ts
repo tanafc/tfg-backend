@@ -1,6 +1,6 @@
 import * as bcryptjs from "bcryptjs";
 
-const saltRounds = 12;
+const saltRounds = 10;
 
 export function hashPassword(password: string): string {
   return bcryptjs.hashSync(password, saltRounds);

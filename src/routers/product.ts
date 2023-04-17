@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import * as jwt from "../middleware/authJwt";
 import { Nutrients } from "../models/nutrients";
 import { Product } from "../models/product";
+import { Receipt } from "../models/receipt";
 import { Shop } from "../models/shop";
 
 export const productRouter = express.Router();
@@ -107,67 +108,8 @@ productRouter.post("/products", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-// productRouter.post(
-//   "/products/prices",
-//   jwt.authenticateToken,
-//   async (req, res) => {
-//     const user = res.locals.auth;
-
-//     const filterProduct = { barcode: req.body.barcode };
-//     const filterShop = { name: req.body.shop };
-
-//     if (!(filterProduct.barcode && filterShop.name)) {
-//       return res
-//         .status(400)
-//         .send({ error: "A product and shop needs to be provided" });
-//     }
-
-//     try {
-//       const product = await Product.findOne(filterProduct);
-//       const shop = await Shop.findOne(filterShop);
-
-//       if (!(product && shop)) {
-//         return res.status(404).send();
-//       }
-
-//       const newUpdate = new Update({
-//         price: req.body.price,
-//         product: product._id,
-//         shop: shop._id,
-//         user: user._id,
-//       });
-
-//       product.record.push(newUpdate._id);
-
-//       if (!user.products.includes(product._id)) {
-//         user.products.push(product._id);
-//       }
-
-//       if (!shop.products.includes(product._id)) {
-//         shop.products.push(product._id);
-//       }
-
-//       newUpdate.save();
-//       product.save();
-//       shop.save();
-//       user.save();
-
-//       return res.status(201).send({
-//         _id: newUpdate._id,
-//         price: newUpdate.price,
-//         date: newUpdate.date,
-//         product: product.barcode,
-//         shop: shop.name,
-//         user: user.username,
-//       });
-//     } catch (error) {
-//       return res.status(400).send(error);
-//     }
-//   }
-// );
-
 productRouter.delete("/products", jwt.authenticateToken, async (req, res) => {
-  const user = res.locals.auth;
+  const user = req.user;
 
   if (user.role !== "admin") {
     return res.status(401).send();
@@ -190,12 +132,97 @@ productRouter.delete("/products", jwt.authenticateToken, async (req, res) => {
 
     await Nutrients.findByIdAndDelete(product.nutrients);
 
+    await Receipt.deleteMany({ product: product._id });
+
     await Shop.updateMany(
       { products: product._id },
       { $pull: { products: product._id } }
     );
 
     return res.send(product);
+  } catch (error) {
+    return res.status(400).send();
+  }
+});
+
+productRouter.patch("/products", jwt.authenticateToken, async (req, res) => {
+  const account = req.user;
+
+  if (account.role !== "admin") {
+    return res.status(401).send();
+  }
+
+  if (!req.query.barcode) {
+    return res.status(400).send({
+      error: "A barcode needs to be provided",
+    });
+  }
+
+  const updates = req.body.updates ?? {};
+  const allowedUpdates = [
+    "name",
+    "brand",
+    "image",
+    "ingredients",
+    "nutrients",
+    "beverage",
+    "nutriScore",
+  ];
+  const actualUpdates = Object.keys(updates);
+
+  if (actualUpdates.length === 0) {
+    return res.status(400).send({
+      error: "No updates were found.",
+    });
+  }
+
+  const isValidUpdate = actualUpdates.every((update) =>
+    allowedUpdates.includes(update)
+  );
+
+  if (!isValidUpdate) {
+    return res.status(400).send({
+      error:
+        "Invalid update: name, brand, image, ingredients, nutrients, beverage and nutriScore are the only changes allowed.",
+    });
+  }
+
+  try {
+    const product = await Product.findOne({
+      barcode: req.query.barcode.toString(),
+    });
+
+    if (!product) {
+      return res.status(404).send();
+    }
+
+    const { nutrients, ...restUpdates } = updates;
+
+    if (nutrients) {
+      await Nutrients.findByIdAndUpdate(
+        product.nutrients,
+        {
+          ...nutrients,
+          product: product._id,
+          _id: product.nutrients,
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+    }
+
+    const updatedProduct = await Product.findOneAndUpdate(
+      { barcode: req.query.barcode.toString() },
+      restUpdates,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    return res.send(updatedProduct);
   } catch (error) {
     return res.status(400).send();
   }

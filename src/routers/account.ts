@@ -6,68 +6,19 @@ import { isSecure } from "../utils/validateAccount";
 
 export const accountRouter = express.Router();
 
-accountRouter.get("/account", jwt.authenticateToken, async (_, res) => {
-  const account = res.locals.auth
+accountRouter.get("/account", jwt.authenticateToken, async (req, res) => {
+  const account = req.user;
 
   try {
     return res.send({
       username: account.username,
       email: account.email,
       role: account.role,
-      receipts: account.receipts,
     });
   } catch (error) {
     return res.status(400).send(error);
   }
 });
-
-// accountRouter.get("/account", jwt.authenticateToken, async (req, res) => {
-//   const filter = req.query.username
-//     ? { username: req.query.username.toString() }
-//     : undefined;
-
-//   if (!filter) {
-//     return res.status(400).send({
-//       error: "An account name needs to be provided",
-//     });
-//   }
-
-//   try {
-//     const account = await Account.findOne(filter);
-
-//     if (!account) {
-//       return res.status(400).send();
-//     }
-
-//     return res.send({
-//       username: account.username,
-//       email: account.email,
-//       role: account.role,
-//       products: account.products,
-//     });
-//   } catch (error) {
-//     return res.status(400).send(error);
-//   }
-// });
-
-// accountRouter.get("/account/:id", jwt.authenticateToken, async (req, res) => {
-//   try {
-//     const account = await Account.findById(req.params.id);
-
-//     if (!account) {
-//       return res.status(404).send();
-//     }
-
-//     return res.send({
-//       username: account.username,
-//       email: account.email,
-//       role: account.role,
-//       products: account.products,
-//     });
-//   } catch (error) {
-//     return res.status(400).send(error);
-//   }
-// });
 
 accountRouter.post("/signup", async (req, res) => {
   const filter = req.body.username
@@ -161,12 +112,18 @@ accountRouter.post("/login", async (req, res) => {
 
 accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
   try {
+    const account = req.user;
+
     const updates = req.body.updates ?? {};
-
-    const account = res.locals.auth;
-
     const allowedUpdates = ["username", "password", "email"];
     const actualUpdates = Object.keys(updates);
+
+    if (actualUpdates.length === 0) {
+      return res.status(400).send({
+        error: "No updates were found.",
+      });
+    }
+
     const isValidUpdates = actualUpdates.every((update) =>
       allowedUpdates.includes(update)
     );
@@ -223,9 +180,9 @@ accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
 
 accountRouter.delete("/account", jwt.authenticateToken, async (req, res) => {
   try {
-    const password: string | undefined = req.body.password?.toString();
+    const account = req.user;
 
-    const account = res.locals.auth;
+    const password: string | undefined = req.body.password?.toString();
 
     if (!password) {
       return res.status(401).send({ error: "A password needs to be provided" });

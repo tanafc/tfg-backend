@@ -1,7 +1,9 @@
 import * as express from "express";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import * as jwt from "../middleware/authJwt";
 import { Location } from "../models/location";
+import { Product } from "../models/product";
+import { Receipt } from "../models/receipt";
 import { Shop } from "../models/shop";
 
 export const shopRouter = express.Router();
@@ -24,7 +26,7 @@ shopRouter.get("/shops", jwt.authenticateToken, async (req, res) => {
       return res.status(404).send();
     }
 
-    await shop.populate("products", "-_id name barcode");
+    await shop.populate("products", "-_id name barcode brand");
     await shop.populate("locations", "-shop");
 
     return res.send(shop);
@@ -41,7 +43,7 @@ shopRouter.get("/shops/:id", jwt.authenticateToken, async (req, res) => {
       return res.status(404).send();
     }
 
-    await shop.populate("products", "-_id name barcode");
+    await shop.populate("products", "-_id name barcode brand");
     await shop.populate("locations", "-shop");
 
     return res.send(shop);
@@ -72,7 +74,7 @@ shopRouter.post("/shops", jwt.authenticateToken, async (req, res) => {
 
     const newLocation = new Location({
       ...req.body.location,
-      shop: newShopId
+      shop: newShopId,
     });
 
     const newShop = new Shop({
@@ -96,7 +98,7 @@ shopRouter.post("/shops/locations", jwt.authenticateToken, async (req, res) => {
     : undefined;
 
   if (!filter) {
-    return res.status(404).send({
+    return res.status(400).send({
       error: "The name of the shop needs to be provided",
     });
   }
@@ -112,7 +114,7 @@ shopRouter.post("/shops/locations", jwt.authenticateToken, async (req, res) => {
 
     const location = new Location({
       ...req.body,
-      shop: shop._id
+      shop: shop._id,
     });
 
     shop.locations.push(location._id);
@@ -126,8 +128,51 @@ shopRouter.post("/shops/locations", jwt.authenticateToken, async (req, res) => {
   }
 });
 
+shopRouter.post("/shops/products", jwt.authenticateToken, async (req, res) => {
+  const user = req.user;
+
+  const filterShop = req.query.name
+    ? { name: req.query.name.toString() }
+    : undefined;
+
+  const filterProduct = req.body.barcode
+    ? { barcode: req.body.barcode.toString() }
+    : undefined;
+
+  if (!(filterShop && filterProduct && req.body.price)) {
+    return res.status(400).send({
+      error: "A shop, barcode of a product, and price needs to be provided.",
+    });
+  }
+
+  try {
+    const shop = await Shop.findOne(filterShop);
+    const product = await Product.findOne(filterProduct);
+
+    if (!(shop && product)) {
+      return res.status(404).send();
+    }
+
+    shop.products.push(product._id);
+
+    const receipt = new Receipt({
+      price: req.body.price,
+      product: product._id,
+      shop: shop._id,
+      user: user._id,
+    });
+
+    await receipt.save();
+    await shop.save();
+
+    return res.status(201).send(shop);
+  } catch (error) {
+    return res.status(400).send(error);
+  }
+});
+
 shopRouter.delete("/shops", jwt.authenticateToken, async (req, res) => {
-  const account = res.locals.auth;
+  const account = req.user;
 
   if (account.role !== "admin") {
     return res.status(401).send();
@@ -149,6 +194,7 @@ shopRouter.delete("/shops", jwt.authenticateToken, async (req, res) => {
     }
 
     await Location.deleteMany({ _id: { $in: shop.locations } });
+    await Receipt.deleteMany({ shop: shop._id });
 
     return res.send(shop);
   } catch (error) {
@@ -157,80 +203,161 @@ shopRouter.delete("/shops", jwt.authenticateToken, async (req, res) => {
 });
 
 shopRouter.delete(
-  "/shops/locations/:id",
+  "/shops/locations",
   jwt.authenticateToken,
   async (req, res) => {
-    const account = res.locals.auth;
+    const account = req.user;
 
     if (account.role !== "admin") {
       return res.status(401).send();
     }
 
-    if (!req.params.id) {
+    const filter = req.query.name
+      ? { name: req.query.name.toString() }
+      : undefined;
+
+    if (!filter) {
       return res.status(400).send({
-        error: "An id of a location needs to be provided",
+        error: "A name for a shop needs to be provided",
+      });
+    }
+
+    if (!req.body.locations) {
+      return res.status(400).send({
+        error: "Ids of locations needs to be provided",
       });
     }
 
     try {
-      const location = await Location.findByIdAndDelete(req.params.id);
+      const locations: Types.ObjectId[] = req.body.locations;
 
-      if (!location) {
+      const shop = await Shop.findOne(filter);
+
+      if (!shop) {
         return res.status(404).send();
       }
 
-      await Shop.findByIdAndUpdate(location.shop, {
-        $pull: { locations: location._id },
+      if (!locations.every((location) => shop.locations.includes(location))) {
+        return res
+          .status(404)
+          .send({ error: "Some locations do not match the shop." });
+      }
+
+      await shop.updateOne({
+        $pullAll: { locations: locations },
       });
 
-      return res.send(location);
+      await Location.deleteMany({ _id: { $in: locations } });
+
+      return res.send(shop);
     } catch (error) {
       return res.status(400).send();
     }
   }
 );
 
-// shopRouter.patch("/shops", jwt.authenticateToken, async (req, res) => {
-//   const account = res.locals.auth;
+shopRouter.delete(
+  "/shops/products",
+  jwt.authenticateToken,
+  async (req, res) => {
+    const account = req.user;
 
-//   if (account.role !== "admin") {
-//     return res.status(401).send();
-//   }
+    if (account.role !== "admin") {
+      return res.status(401).send();
+    }
 
-//   if (!req.query.name) {
-//     return res.status(400).send({
-//       error: "A name needs to be provided",
-//     });
-//   }
+    const filter = req.query.name
+      ? { name: req.query.name.toString() }
+      : undefined;
 
-//   const allowedUpdates = ["name", "products", "locations"];
-//   const actualUpdates = Object.keys(req.body);
-//   const isValidUpdate = actualUpdates.every((update) =>
-//     allowedUpdates.includes(update)
-//   );
+    if (!filter) {
+      return res.status(400).send({
+        error: "A name for a shop needs to be provided",
+      });
+    }
 
-//   if (!isValidUpdate) {
-//     return res.status(400).send({
-//       error: "Update is not permitted",
-//     });
-//   }
+    if (!req.body.products) {
+      return res.status(400).send({
+        error: "Barcodes of products needs to be provided",
+      });
+    }
 
-//   try {
-//     const shop = await Shop.findOneAndUpdate(
-//       { name: req.query.name.toString() },
-//       req.body,
-//       {
-//         new: true,
-//         runValidators: true,
-//       }
-//     );
+    try {
+      const barcodes = req.body.products;
 
-//     if (!shop) {
-//       return res.status(404).send();
-//     }
+      const products = await Product.find({ barcode: { $in: barcodes } });
 
-//     return res.send(shop);
-//   } catch (error) {
-//     return res.status(400).send();
-//   }
-// });
+      const productsIds = products.map((product) => product._id);
+
+      const shop = await Shop.findOneAndUpdate(filter, {
+        $pullAll: { products: productsIds },
+      });
+
+      if (!shop) {
+        return res.status(404).send();
+      }
+
+      await Receipt.deleteMany({
+        product: { $in: productsIds },
+        shop: shop._id,
+      });
+
+      return res.send(shop);
+    } catch (error) {
+      return res.status(400).send();
+    }
+  }
+);
+
+shopRouter.patch("/shops", jwt.authenticateToken, async (req, res) => {
+  const account = req.user;
+
+  if (account.role !== "admin") {
+    return res.status(401).send();
+  }
+
+  if (!req.query.name) {
+    return res.status(400).send({
+      error: "A name needs to be provided",
+    });
+  }
+
+  const updates = req.body.updates ?? {};
+  const allowedUpdates = ["name"];
+  const actualUpdates = Object.keys(updates);
+
+  if (actualUpdates.length === 0) {
+    return res.status(400).send({
+      error: "No updates were found.",
+    });
+  }
+
+  const isValidUpdate = actualUpdates.every((update) =>
+    allowedUpdates.includes(update)
+  );
+
+  if (!isValidUpdate) {
+    return res.status(400).send({
+      error: "Update is not permitted",
+    });
+  }
+
+  try {
+    const shop = await Shop.findOneAndUpdate(
+      { name: req.query.name.toString() },
+      updates,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!shop) {
+      return res.status(404).send();
+    }
+
+    return res.send(shop);
+  } catch (error) {
+    return res.status(400).send();
+  }
+});

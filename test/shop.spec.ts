@@ -3,11 +3,19 @@ import * as request from "supertest";
 import app from "../src/app";
 import "../src/database/mongoose";
 import { Location } from "../src/models/location";
+import { Receipt } from "../src/models/receipt";
 import { Shop } from "../src/models/shop";
 import {
   adminUserToken,
   locationTwoId,
+  productOne,
+  productOneId,
+  productThree,
+  productThreeId,
   productTwo,
+  productTwoId,
+  receiptOfProductTwoId,
+  regularUserId,
   regularUserToken,
   setupDatabase,
   shopOne,
@@ -129,6 +137,86 @@ describe("POST /shops/locations", () => {
   });
 });
 
+describe("POST /shops/products", () => {
+  it("does NOT allow to post a product in a shop without the shop name", async () => {
+    const response = await request(app)
+      .post("/shops/products")
+      .send({ barcode: productThree.barcode, price: 3.5 })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(400);
+
+    expect(response.body.error).to.equal(
+      "A shop, barcode of a product, and price needs to be provided."
+    );
+  });
+
+  it("does NOT allow to post a product in a shop without the barcode name", async () => {
+    const response = await request(app)
+      .post("/shops/products")
+      .query({ name: shopOne.name })
+      .send({ price: 3.5 })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(400);
+
+    expect(response.body.error).to.equal(
+      "A shop, barcode of a product, and price needs to be provided."
+    );
+  });
+
+  it("does NOT allow to post a product in a shop without price", async () => {
+    const response = await request(app)
+      .post("/shops/products")
+      .query({ name: shopOne.name })
+      .send({ barcode: productThree.barcode })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(400);
+
+    expect(response.body.error).to.equal(
+      "A shop, barcode of a product, and price needs to be provided."
+    );
+  });
+
+  it("does NOT allow to post of a product in a non-existent shop", async () => {
+    await request(app)
+      .post("/shops/products")
+      .query({ name: "dummy" })
+      .send({ barcode: productThree.barcode, price: 3.5 })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(404);
+  });
+
+  it("does NOT allow to post of a non-existent product in a shop", async () => {
+    await request(app)
+      .post("/shops/products")
+      .query({ name: shopOne.name })
+      .send({ barcode: "123123123", price: 3.5 })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(404);
+  });
+
+  it("posts a product in a shop", async () => {
+    await request(app)
+      .post("/shops/products")
+      .query({ name: shopOne.name })
+      .send({ barcode: productThree.barcode, price: 6.8 })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(201);
+
+    const shop = await Shop.findById(shopOneId);
+    expect(shop?.products).to.include(productThreeId);
+
+    const receipt = await Receipt.findOne({
+      shop: shopOneId,
+      product: productThreeId,
+    });
+    expect(receipt).not.to.be.null;
+    expect(receipt!.product).to.include(productThreeId);
+    expect(receipt!.shop).to.include(shopOneId);
+    expect(receipt!.price).to.equal(6.8);
+    expect(receipt!.user).to.include(regularUserId);
+  });
+});
+
 describe("GET /shops", () => {
   it("gets a shop stored in the database by its id", async () => {
     const response = await request(app)
@@ -136,12 +224,19 @@ describe("GET /shops", () => {
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .expect(200);
 
-    expect(response.body).to.include({
-      name: shopTwo.name,
-    });
+    expect(response.body.name).to.equal(shopTwo.name);
 
     expect(response.body.products).to.eql([
-      { name: productTwo.name, barcode: productTwo.barcode },
+      {
+        name: productTwo.name,
+        barcode: productTwo.barcode,
+        brand: productTwo.brand,
+      },
+      {
+        name: productThree.name,
+        barcode: productThree.barcode,
+        brand: productThree.brand,
+      },
     ]);
 
     expect(response.body.locations.length).to.be.equal(1);
@@ -159,12 +254,19 @@ describe("GET /shops", () => {
       .query({ name: shopTwo.name })
       .expect(200);
 
-    expect(response.body).to.include({
-      name: shopTwo.name,
-    });
+    expect(response.body.name).to.equal(shopTwo.name);
 
     expect(response.body.products).to.eql([
-      { name: productTwo.name, barcode: productTwo.barcode },
+      {
+        name: productTwo.name,
+        barcode: productTwo.barcode,
+        brand: productTwo.brand,
+      },
+      {
+        name: productThree.name,
+        barcode: productThree.barcode,
+        brand: productThree.brand,
+      },
     ]);
 
     expect(response.body.locations.length).to.be.equal(1);
@@ -200,13 +302,18 @@ describe("DELETE /shops", () => {
 
     const location = await Location.findById(locationTwoId);
     expect(location).to.be.null;
+
+    const receipt = await Receipt.findById(receiptOfProductTwoId);
+    expect(receipt).to.be.null;
   });
 });
 
-describe("DELETE /shops/locations/:id", () => {
+describe("DELETE /shops/locations", () => {
   it("does NOT allow a user without the admin role to delete the location of a shop", async () => {
     await request(app)
-      .delete(`/shops/locations/${locationTwoId}`)
+      .delete("/shops/locations")
+      .query({ name: shopTwo.name })
+      .send({ locations: locationTwoId })
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .expect(401);
 
@@ -219,7 +326,9 @@ describe("DELETE /shops/locations/:id", () => {
 
   it("allows a user with the admin role to delete the location of a shop", async () => {
     await request(app)
-      .delete(`/shops/locations/${locationTwoId}`)
+      .delete("/shops/locations")
+      .query({ name: shopTwo.name })
+      .send({ locations: [locationTwoId] })
       .set({ Authorization: `Bearer ${adminUserToken}` })
       .expect(200);
 
@@ -231,55 +340,94 @@ describe("DELETE /shops/locations/:id", () => {
   });
 });
 
-// describe("PATCH /shops", () => {
-//   it("does NOT allow a user without the admin role to update a shop", async () => {
-//     const updates = {
-//       name: "Spar",
-//       locations: [{ latitude: 10, longitude: 10, location: "Santa Cruz" }],
-//     };
+describe("DELETE /shops/products", () => {
+  it("does NOT allow the removal of a product in a shop without admin token", async () => {
+    await request(app)
+      .delete("/shops/products")
+      .query({ name: shopOne.name })
+      .send({ products: [productOne.barcode] })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(401);
 
-//     await request(app)
-//       .patch("/shops")
-//       .query({ name: "Alcampo" })
-//       .set({ Authorization: `Bearer ${regularUserToken}` })
-//       .send(updates)
-//       .expect(401);
+    const shop = await Shop.findById(shopOneId);
+    expect(shop?.products).to.include(productOneId);
 
-//     const alcampoShop = await Shop.findOne({ name: "Alcampo" });
-//     expect(alcampoShop).not.to.be.null;
+    const receipt = await Receipt.findOne({
+      shop: shopOneId,
+      product: productOneId,
+    });
+    expect(receipt).not.to.be.null;
+    expect(receipt!.price).to.equal(3.4);
+  });
 
-//     const sparShop = await Shop.findOne({ name: "Spar" });
-//     expect(sparShop).to.be.null;
-//   });
+  it("allows the removal of a product in a shop with admin token", async () => {
+    await request(app)
+      .delete("/shops/products")
+      .query({ name: shopTwo.name })
+      .send({ products: [productTwo.barcode] })
+      .set({ Authorization: `Bearer ${adminUserToken}` })
+      .expect(200);
 
-//   it("allows a user with the admin role to update a shop", async () => {
-//     const updates = {
-//       name: "Spar",
-//       locations: [{ latitude: 10, longitude: 10, location: "Santa Cruz" }],
-//     };
+    const shop = await Shop.findById(shopTwoId);
+    expect(shop?.products).to.not.include(productOneId);
+    expect(shop?.products).to.include(productThreeId);
 
-//     const response = await request(app)
-//       .patch("/shops")
-//       .query({ name: "Alcampo" })
-//       .set({ Authorization: `Bearer ${adminUserToken}` })
-//       .send(updates)
-//       .expect(200);
+    const receiptOfProductTwo = await Receipt.findOne({
+      shop: shopTwoId,
+      product: productTwoId,
+    });
+    expect(receiptOfProductTwo).to.be.null;
 
-//     expect(response.body).to.include({
-//       name: "Spar",
-//     });
-//     expect(response.body).to.have.property("locations");
-//     expect(response.body.locations.length).to.be.equal(1);
-//     expect(response.body.locations[0]).to.include({
-//       latitude: 10,
-//       longitude: 10,
-//       location: "Santa Cruz",
-//     });
+    const receiptOfProductThree = await Receipt.findOne({
+      shop: shopTwoId,
+      product: productThreeId,
+    });
+    expect(receiptOfProductThree).not.to.be.null;
+    expect(receiptOfProductThree!.price).to.equal(3.85);
+  });
+});
 
-//     const alcampoShop = await Shop.findOne({ name: "Alcampo" });
-//     expect(alcampoShop).to.be.null;
+describe("PATCH /shops", () => {
+  it("does NOT allow a user without the admin role to update the name of a shop", async () => {
+    const update = {
+      name: "Spar",
+    };
 
-//     const sparShop = await Shop.findOne({ name: "Spar" });
-//     expect(sparShop).not.to.be.null;
-//   });
-// });
+    await request(app)
+      .patch("/shops")
+      .query({ name: shopTwo.name })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .send({ updates: update })
+      .expect(401);
+
+    const alcampoShop = await Shop.findOne({ name: shopTwo.name });
+    expect(alcampoShop).not.to.be.null;
+
+    const sparShop = await Shop.findOne({ name: "Spar" });
+    expect(sparShop).to.be.null;
+  });
+
+  it("allows a user with the admin role to update the name of a shop", async () => {
+    const update = {
+      name: "Spar",
+    };
+
+    const response = await request(app)
+      .patch("/shops")
+      .query({ name: shopTwo.name })
+      .set({ Authorization: `Bearer ${adminUserToken}` })
+      .send({ updates: update })
+      .expect(200);
+
+    expect(response.body).to.include({
+      name: "Spar",
+    });
+
+    const alcampoShop = await Shop.findOne({ name: "Alcampo" });
+    expect(alcampoShop).to.be.null;
+
+    const sparShop = await Shop.findOne({ name: "Spar" });
+    expect(sparShop).not.to.be.null;
+    expect(sparShop?.products).to.include(productTwoId);
+  });
+});

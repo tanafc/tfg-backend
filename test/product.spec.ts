@@ -212,7 +212,9 @@ describe("GET /products", () => {
       fibre: 2.7,
     });
   });
+});
 
+describe("GET /products-all", () => {
   it("gets products with similar name", async () => {
     const response = await request(app)
       .get("/products-all")
@@ -220,21 +222,32 @@ describe("GET /products", () => {
       .query({ name: "dori" })
       .expect(200);
 
-    expect(response.body.length).to.equal(2);
+    expect(response.body.products.length).to.equal(2);
 
-    expect(response.body[0]).to.include({
+    expect(response.body.products[0]).to.include({
       barcode: "712345760891",
       name: "Doritos Original",
       brand: "Doritos",
       image: "null",
     });
 
-    expect(response.body[1]).to.include({
+    expect(response.body.products[1]).to.include({
       barcode: "712345760818",
       name: "Doritos Nacho Cheese",
       brand: "Doritos",
       image: "null",
     });
+  });
+
+  it("returns empty when no similarities are found", async () => {
+    const response = await request(app)
+      .get("/products-all")
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .query({ name: "abra" })
+      .expect(200);
+
+    expect(response.body.products.length).to.equal(0);
+    expect(response.body.products).to.eql([]);
   });
 });
 

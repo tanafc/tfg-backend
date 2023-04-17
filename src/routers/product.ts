@@ -61,7 +61,7 @@ productRouter.get("/products-all", jwt.authenticateToken, async (req, res) => {
       "barcode name brand image"
     );
 
-    return res.send(products);
+    return res.send({ products });
   } catch (error) {
     return res.status(500).send();
   }

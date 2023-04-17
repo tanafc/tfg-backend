@@ -1,8 +1,9 @@
-require("dotenv").config();
-
+import * as dotenv from "dotenv";
 import { NextFunction, Request, Response } from "express";
 import * as jwt from "jsonwebtoken";
 import { Account } from "../models/account";
+
+dotenv.config();
 
 type TokenPayload = {
   username: string;
@@ -10,18 +11,12 @@ type TokenPayload = {
   exp?: number;
 };
 
-/**
- * Function to generate JWT tokens
- */
 export function generateAccessToken(payload: TokenPayload) {
   return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET as string, {
     expiresIn: "2h",
   });
 }
 
-/**
- * Function to verify JWT tokens
- */
 export const authenticateToken = async (
   req: Request,
   res: Response,
@@ -38,14 +33,14 @@ export const authenticateToken = async (
       token,
       process.env.ACCESS_TOKEN_SECRET as jwt.Secret
     ) as TokenPayload;
-    
+
     const account = await Account.findOne({ username: decoded.username });
 
     if (!account) {
       throw new Error();
     }
-    
-    res.locals.auth = account;
+
+    req.user = account;
 
     next();
   } catch (err) {

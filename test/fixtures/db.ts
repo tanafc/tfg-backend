@@ -77,7 +77,7 @@ export const shopTwo = {
   _id: shopTwoId,
   name: "Alcampo",
   locations: [locationTwo],
-  products: [productTwoId],
+  products: [productTwoId, productThreeId],
 };
 
 export const receiptOfProductOne = {

@@ -1,12 +1,12 @@
 import { Schema, Types, model } from "mongoose";
 import { isValidEmail, isValidUsername } from "../utils/validateAccount";
 
-interface AccountInterface {
+export interface AccountInterface {
+  _id: Types.ObjectId,
   username: string;
   email: string;
   password: string;
   role: string;
-  receipts: Types.ObjectId[];
 }
 
 const AccountSchema = new Schema<AccountInterface>({
@@ -35,12 +35,6 @@ const AccountSchema = new Schema<AccountInterface>({
     enum: ["regular", "admin"],
     default: "regular",
   },
-  receipts: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "Receipt",
-    },
-  ],
 });
 
 export const Account = model<AccountInterface>("Account", AccountSchema);

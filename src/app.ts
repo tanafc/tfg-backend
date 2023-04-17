@@ -1,17 +1,10 @@
 import * as express from "express";
-import * as cors from "cors";
-import { defaultRouter } from "./routers/default";
 import { accountRouter } from "./routers/account";
-import { shopRouter } from "./routers/shop";
+import { defaultRouter } from "./routers/default";
 import { productRouter } from "./routers/product";
+import { shopRouter } from "./routers/shop";
 
 const app = express();
-
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-  })
-);
 
 app.use(express.json());
 app.use(accountRouter);

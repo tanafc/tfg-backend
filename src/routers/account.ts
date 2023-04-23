@@ -1,12 +1,12 @@
 import * as express from "express";
-import * as jwt from "../middleware/authJwt";
+import { authenticateToken, generateAccessToken } from "../middleware/authJwt";
 import { Account } from "../models/account";
 import { comparePassword, hashPassword } from "../utils/hashPassword";
 import { isSecure } from "../utils/validateAccount";
 
 export const accountRouter = express.Router();
 
-accountRouter.get("/account", jwt.authenticateToken, async (req, res) => {
+accountRouter.get("/account", authenticateToken, async (req, res) => {
   const account = req.user;
 
   try {
@@ -94,7 +94,7 @@ accountRouter.post("/login", async (req, res) => {
       });
     }
 
-    const accessToken = jwt.generateAccessToken({
+    const accessToken = generateAccessToken({
       username: account.username,
     });
 
@@ -110,7 +110,7 @@ accountRouter.post("/login", async (req, res) => {
   }
 });
 
-accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
+accountRouter.patch("/account", authenticateToken, async (req, res) => {
   try {
     const account = req.user;
 
@@ -163,7 +163,7 @@ accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
       return res.status(500).send();
     }
 
-    const accessToken = jwt.generateAccessToken({
+    const accessToken = generateAccessToken({
       username: updatedAccount.username,
     });
 
@@ -178,7 +178,7 @@ accountRouter.patch("/account", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-accountRouter.delete("/account", jwt.authenticateToken, async (req, res) => {
+accountRouter.delete("/account", authenticateToken, async (req, res) => {
   try {
     const account = req.user;
 

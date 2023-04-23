@@ -1,14 +1,16 @@
 import * as express from "express";
 import mongoose, { Types } from "mongoose";
-import * as jwt from "../middleware/authJwt";
+import { authenticateToken } from "../middleware/authJwt";
+import { authenticateRole } from "../middleware/authRole";
 import { Location } from "../models/location";
 import { Product } from "../models/product";
 import { Receipt } from "../models/receipt";
 import { Shop } from "../models/shop";
+import ROLE from "../models/role";
 
 export const shopRouter = express.Router();
 
-shopRouter.get("/shops", jwt.authenticateToken, async (req, res) => {
+shopRouter.get("/shops", authenticateToken, async (req, res) => {
   const filter = req.query.name
     ? { name: req.query.name.toString() }
     : undefined;
@@ -35,7 +37,7 @@ shopRouter.get("/shops", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-shopRouter.get("/shops/:id", jwt.authenticateToken, async (req, res) => {
+shopRouter.get("/shops/:id", authenticateToken, async (req, res) => {
   try {
     const shop = await Shop.findById(req.params.id);
 
@@ -52,7 +54,7 @@ shopRouter.get("/shops/:id", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-shopRouter.post("/shops", jwt.authenticateToken, async (req, res) => {
+shopRouter.post("/shops", authenticateToken, async (req, res) => {
   const filter = req.body.name ? { name: req.body.name.toString() } : undefined;
 
   if (!filter) {
@@ -92,7 +94,7 @@ shopRouter.post("/shops", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-shopRouter.post("/shops/locations", jwt.authenticateToken, async (req, res) => {
+shopRouter.post("/shops/locations", authenticateToken, async (req, res) => {
   const filter = req.query.name
     ? { name: req.query.name.toString() }
     : undefined;
@@ -128,7 +130,7 @@ shopRouter.post("/shops/locations", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-shopRouter.post("/shops/products", jwt.authenticateToken, async (req, res) => {
+shopRouter.post("/shops/products", authenticateToken, async (req, res) => {
   const user = req.user;
 
   const filterShop = req.query.name
@@ -171,47 +173,41 @@ shopRouter.post("/shops/products", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-shopRouter.delete("/shops", jwt.authenticateToken, async (req, res) => {
-  const account = req.user;
-
-  if (account.role !== "admin") {
-    return res.status(401).send();
-  }
-
-  if (!req.query.name) {
-    return res.status(400).send({
-      error: "A name needs to be provided",
-    });
-  }
-
-  try {
-    const shop = await Shop.findOneAndDelete({
-      name: req.query.name.toString(),
-    });
-
-    if (!shop) {
-      return res.status(404).send();
+shopRouter.delete(
+  "/shops",
+  authenticateToken,
+  authenticateRole(ROLE.ADMIN),
+  async (req, res) => {
+    if (!req.query.name) {
+      return res.status(400).send({
+        error: "A name needs to be provided",
+      });
     }
 
-    await Location.deleteMany({ _id: { $in: shop.locations } });
-    await Receipt.deleteMany({ shop: shop._id });
+    try {
+      const shop = await Shop.findOneAndDelete({
+        name: req.query.name.toString(),
+      });
 
-    return res.send(shop);
-  } catch (error) {
-    return res.status(400).send();
+      if (!shop) {
+        return res.status(404).send();
+      }
+
+      await Location.deleteMany({ _id: { $in: shop.locations } });
+      await Receipt.deleteMany({ shop: shop._id });
+
+      return res.send(shop);
+    } catch (error) {
+      return res.status(400).send();
+    }
   }
-});
+);
 
 shopRouter.delete(
   "/shops/locations",
-  jwt.authenticateToken,
+  authenticateToken,
+  authenticateRole(ROLE.ADMIN),
   async (req, res) => {
-    const account = req.user;
-
-    if (account.role !== "admin") {
-      return res.status(401).send();
-    }
-
     const filter = req.query.name
       ? { name: req.query.name.toString() }
       : undefined;
@@ -258,14 +254,9 @@ shopRouter.delete(
 
 shopRouter.delete(
   "/shops/products",
-  jwt.authenticateToken,
+  authenticateToken,
+  authenticateRole(ROLE.ADMIN),
   async (req, res) => {
-    const account = req.user;
-
-    if (account.role !== "admin") {
-      return res.status(401).send();
-    }
-
     const filter = req.query.name
       ? { name: req.query.name.toString() }
       : undefined;
@@ -309,55 +300,54 @@ shopRouter.delete(
   }
 );
 
-shopRouter.patch("/shops", jwt.authenticateToken, async (req, res) => {
-  const account = req.user;
-
-  if (account.role !== "admin") {
-    return res.status(401).send();
-  }
-
-  if (!req.query.name) {
-    return res.status(400).send({
-      error: "A name needs to be provided",
-    });
-  }
-
-  const updates = req.body.updates ?? {};
-  const allowedUpdates = ["name"];
-  const actualUpdates = Object.keys(updates);
-
-  if (actualUpdates.length === 0) {
-    return res.status(400).send({
-      error: "No updates were found.",
-    });
-  }
-
-  const isValidUpdate = actualUpdates.every((update) =>
-    allowedUpdates.includes(update)
-  );
-
-  if (!isValidUpdate) {
-    return res.status(400).send({
-      error: "Update is not permitted",
-    });
-  }
-
-  try {
-    const shop = await Shop.findOneAndUpdate(
-      { name: req.query.name.toString() },
-      updates,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
-    if (!shop) {
-      return res.status(404).send();
+shopRouter.patch(
+  "/shops",
+  authenticateToken,
+  authenticateRole(ROLE.ADMIN),
+  async (req, res) => {
+    if (!req.query.name) {
+      return res.status(400).send({
+        error: "A name needs to be provided",
+      });
     }
 
-    return res.send(shop);
-  } catch (error) {
-    return res.status(400).send();
+    const updates = req.body.updates ?? {};
+    const allowedUpdates = ["name"];
+    const actualUpdates = Object.keys(updates);
+
+    if (actualUpdates.length === 0) {
+      return res.status(400).send({
+        error: "No updates were found.",
+      });
+    }
+
+    const isValidUpdate = actualUpdates.every((update) =>
+      allowedUpdates.includes(update)
+    );
+
+    if (!isValidUpdate) {
+      return res.status(400).send({
+        error: "Update is not permitted",
+      });
+    }
+
+    try {
+      const shop = await Shop.findOneAndUpdate(
+        { name: req.query.name.toString() },
+        updates,
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
+      if (!shop) {
+        return res.status(404).send();
+      }
+
+      return res.send(shop);
+    } catch (error) {
+      return res.status(400).send();
+    }
   }
-});
+);

@@ -1,12 +1,14 @@
 import * as express from "express";
-import * as jwt from "../middleware/authJwt";
+import { authenticateToken } from "../middleware/authJwt";
+import { authenticateRole } from "../middleware/authRole";
+import { Product } from "../models/product";
 import { Receipt } from "../models/receipt";
 import { Shop } from "../models/shop";
-import { Product } from "../models/product";
+import ROLE from "../models/role";
 
 export const receiptRouter = express.Router();
 
-receiptRouter.get("/receipts/:id", jwt.authenticateToken, async (req, res) => {
+receiptRouter.get("/receipts/:id", authenticateToken, async (req, res) => {
   try {
     const receipt = await Receipt.findById(req.params.id);
 
@@ -23,7 +25,7 @@ receiptRouter.get("/receipts/:id", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-receiptRouter.get("/receipts", jwt.authenticateToken, async (req, res) => {
+receiptRouter.get("/receipts", authenticateToken, async (req, res) => {
   const filterShops = req.query.shop ? { name: req.query.shop.toString() } : {};
 
   const filterProducts = req.query.product
@@ -41,7 +43,7 @@ receiptRouter.get("/receipts", jwt.authenticateToken, async (req, res) => {
       : {};
 
   const limit = req.query.limit ? parseInt(req.query.limit.toString()) : 10;
-  
+
   const skip = req.query.skip ? parseInt(req.query.skip.toString()) : 0;
 
   try {
@@ -72,67 +74,72 @@ receiptRouter.get("/receipts", jwt.authenticateToken, async (req, res) => {
   }
 });
 
-receiptRouter.delete("/receipts", jwt.authenticateToken, async (req, res) => {
-  const user = req.user;
+receiptRouter.delete(
+  "/receipts",
+  authenticateToken,
+  authenticateRole(ROLE.ADMIN),
+  async (req, res) => {
+    const filters = [
+      "product",
+      "shop",
+      "sdate",
+      "edate",
+      "minprice",
+      "maxprice",
+    ];
+    const deleteFrom = Object.keys(req.query);
+    const isValidDelete = deleteFrom.every((filter) =>
+      filters.includes(filter)
+    );
 
-  if (user.role !== "admin") {
-    return res.status(401).send();
-  }
+    if (!isValidDelete || deleteFrom.length === 0) {
+      return res.status(400).send({ error: "No valid queries were given." });
+    }
 
-  const filters = ["product", "shop", "sdate", "edate", "minprice", "maxprice"];
-  const deleteFrom = Object.keys(req.query);
-  const isValidDelete = deleteFrom.every((filter) => filters.includes(filter));
-  
-  if (!isValidDelete || (deleteFrom.length === 0)) {
-    return res.status(400).send({error: "No valid queries were given."});
-  }
-
-  const filterShops = req.query.shop ? { name: req.query.shop.toString() } : {};
-
-  const filterProducts = req.query.product
-    ? { barcode: req.query.product.toString() }
-    : {};
-
-  const filterDate =
-    req.query.sdate && req.query.edate
-      ? { date: { $gte: req.query.sdate, $lte: req.query.edate } }
+    const filterShops = req.query.shop
+      ? { name: req.query.shop.toString() }
       : {};
 
-  const filterPrice =
-    req.query.minprice && req.query.maxprice
-      ? { price: { $gte: req.query.minprice, $lte: req.query.maxprice } }
+    const filterProducts = req.query.product
+      ? { barcode: req.query.product.toString() }
       : {};
 
-  try {
-    const shop = await Shop.findOne(filterShops);
-    const product = await Product.findOne(filterProducts);
+    const filterDate =
+      req.query.sdate && req.query.edate
+        ? { date: { $gte: req.query.sdate, $lte: req.query.edate } }
+        : {};
 
-    const searchShop = req.query.shop ? { shop: shop?._id } : {};
-    const searchProduct = req.query.product ? { product: product?._id } : {};
+    const filterPrice =
+      req.query.minprice && req.query.maxprice
+        ? { price: { $gte: req.query.minprice, $lte: req.query.maxprice } }
+        : {};
 
-    const result = await Receipt.deleteMany({
-      ...searchShop,
-      ...searchProduct,
-      ...filterDate,
-      ...filterPrice,
-    });
+    try {
+      const shop = await Shop.findOne(filterShops);
+      const product = await Product.findOne(filterProducts);
 
-    return res.send({message: `${result.deletedCount} receipt(s) deleted`});
-  } catch (error) {
-    return res.status(400).send();
+      const searchShop = req.query.shop ? { shop: shop?._id } : {};
+      const searchProduct = req.query.product ? { product: product?._id } : {};
+
+      const result = await Receipt.deleteMany({
+        ...searchShop,
+        ...searchProduct,
+        ...filterDate,
+        ...filterPrice,
+      });
+
+      return res.send({ message: `${result.deletedCount} receipt(s) deleted` });
+    } catch (error) {
+      return res.status(400).send();
+    }
   }
-});
+);
 
 receiptRouter.delete(
   "/receipts/:id",
-  jwt.authenticateToken,
+  authenticateToken,
+  authenticateRole(ROLE.ADMIN),
   async (req, res) => {
-    const user = req.user;
-
-    if (user.role !== "admin") {
-      return res.status(401).send();
-    }
-
     try {
       const receipt = await Receipt.findByIdAndDelete(req.params.id)
         .populate("shop", "name")

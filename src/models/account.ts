@@ -1,5 +1,6 @@
 import { Schema, Types, model } from "mongoose";
 import { isValidEmail, isValidUsername } from "../utils/validateAccount";
+import ROLE from "./role";
 
 export interface AccountInterface {
   _id: Types.ObjectId,
@@ -32,8 +33,8 @@ const AccountSchema = new Schema<AccountInterface>({
     type: String,
     required: [true, "A role is required"],
     trim: true,
-    enum: ["regular", "admin"],
-    default: "regular",
+    enum: [ROLE.REGULAR, ROLE.ADMIN],
+    default: ROLE.REGULAR,
   },
 });
 

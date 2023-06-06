@@ -116,7 +116,7 @@ export const nutrientsOfProductOne = {
   totalCarbohydrates: 56.9,
   totalSugars: 2.3,
   protein: 6.6,
-  sodium: 0.97,
+  salt: 0.97,
   fibre: 4.8,
 };
 
@@ -129,7 +129,7 @@ export const nutrientsOfProductTwo = {
   totalCarbohydrates: 68,
   totalSugars: 38,
   protein: 5.3,
-  sodium: 0.73,
+  salt: 0.73,
   fibre: 2.7,
 };
 
@@ -142,7 +142,7 @@ export const nutrientsOfProductThree = {
   totalCarbohydrates: 59.9,
   totalSugars: 2.6,
   protein: 6.8,
-  sodium: 1,
+  salt: 1,
   fibre: 4.8,
 };
 

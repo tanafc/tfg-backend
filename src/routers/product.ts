@@ -51,10 +51,12 @@ productRouter.get("/products/:id", authenticateToken, async (req, res) => {
 });
 
 productRouter.get("/products-all", authenticateToken, async (req, res) => {
-  const filter = req.query.name ?? undefined;
+  const filter = req.query.name?.toString() ?? undefined;
 
   if (!filter) {
-    res.status(404).send("A name for products needs to be provided");
+    return res
+      .status(404)
+      .send({ error: "A name for products needs to be provided" });
   }
 
   try {

@@ -278,6 +278,37 @@ describe("GET /shops", () => {
   });
 });
 
+describe("GET /shops-all", () => {
+  it("gets shops with similar name", async () => {
+    const response = await request(app)
+      .get("/shops-all")
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .query({ name: "Alca" })
+      .expect(200);
+
+    expect(response.body.shops.length).to.equal(1);
+
+    expect(response.body.shops[0]).to.include({
+      name: "Alcampo",
+    });
+  });
+
+  it("returns all shops when no name is send", async () => {
+    const response = await request(app)
+      .get("/shops-all")
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(200);
+
+    expect(response.body.shops.length).to.equal(2);
+    expect(response.body.shops[0]).to.include({
+      name: "Alcampo",
+    });
+    expect(response.body.shops[1]).to.include({
+      name: "Carrefour",
+    });
+  });
+});
+
 describe("DELETE /shops", () => {
   it("does NOT allow a user without the admin role to delete a shop", async () => {
     await request(app)

@@ -54,6 +54,21 @@ shopRouter.get("/shops/:id", authenticateToken, async (req, res) => {
   }
 });
 
+shopRouter.get("/shops-all", authenticateToken, async (req, res) => {
+  const filter = req.query.name?.toString() ?? '';
+
+  try {
+    const shops = await Shop.find(
+      { name: { $regex: filter, $options: "i" } },
+      "name locations"
+    );
+
+    return res.send({ shops: shops });
+  } catch (error) {
+    return res.status(400).send(error);
+  }
+});
+
 shopRouter.post("/shops", authenticateToken, async (req, res) => {
   const filter = req.body.name ? { name: req.body.name.toString() } : undefined;
 
@@ -155,7 +170,9 @@ shopRouter.post("/shops/products", authenticateToken, async (req, res) => {
       return res.status(404).send();
     }
 
-    shop.products.push(product._id);
+    if (!shop.products.includes(product._id)) {
+      shop.products.push(product._id);
+    }
 
     const receipt = new Receipt({
       price: req.body.price,

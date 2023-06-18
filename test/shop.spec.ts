@@ -66,9 +66,8 @@ describe("POST /shops", () => {
     const shop = await Shop.findOne({ name: "Dia" });
     expect(shop).not.to.be.null;
     expect(shop!.name).to.equal("Dia");
-    expect(shop!.locations).to.include(response.body.locations[0]);
 
-    const location = await Location.findById(response.body.locations[0]);
+    const location = await Location.findById(response.body.location);
     expect(location).not.to.be.null;
     expect(location).to.include({
       latitude: 9,
@@ -92,48 +91,6 @@ describe("POST /shops", () => {
       .set({ Authorization: `Bearer ${regularUserToken}` })
       .send(newShop)
       .expect(409);
-  });
-});
-
-describe("POST /shops/locations", () => {
-  it("does NOT create a new location for a non-existent shop", async () => {
-    const newLocation = {
-      latitude: 12,
-      longitude: 74,
-      address: "Calle 4 La Orotava",
-    };
-
-    await request(app)
-      .post("/shops/locations")
-      .query({ name: "Don" })
-      .set({ Authorization: `Bearer ${regularUserToken}` })
-      .send(newLocation)
-      .expect(404);
-  });
-
-  it("posts a new location of a shop", async () => {
-    const newLocation = {
-      latitude: 12,
-      longitude: 74,
-      address: "Calle 4 La Orotava",
-    };
-
-    const response = await request(app)
-      .post("/shops/locations")
-      .query({ name: shopOne.name })
-      .set({ Authorization: `Bearer ${regularUserToken}` })
-      .send(newLocation)
-      .expect(201);
-
-    const shop = await Shop.findById(shopOneId);
-    expect(shop?.locations).to.include(response.body._id);
-
-    const location = await Location.findById(response.body._id);
-    expect(location).to.include({
-      latitude: 12,
-      longitude: 74,
-      address: "Calle 4 La Orotava",
-    });
   });
 });
 
@@ -239,8 +196,7 @@ describe("GET /shops", () => {
       },
     ]);
 
-    expect(response.body.locations.length).to.be.equal(1);
-    expect(response.body.locations[0]).to.include({
+    expect(response.body.location).to.include({
       latitude: 8,
       longitude: 8,
       address: "Santa Cruz",
@@ -269,8 +225,7 @@ describe("GET /shops", () => {
       },
     ]);
 
-    expect(response.body.locations.length).to.be.equal(1);
-    expect(response.body.locations[0]).to.include({
+    expect(response.body.location).to.include({
       latitude: 8,
       longitude: 8,
       address: "Santa Cruz",
@@ -336,38 +291,6 @@ describe("DELETE /shops", () => {
 
     const receipt = await Receipt.findById(receiptOfProductTwoId);
     expect(receipt).to.be.null;
-  });
-});
-
-describe("DELETE /shops/locations", () => {
-  it("does NOT allow a user without the admin role to delete the location of a shop", async () => {
-    await request(app)
-      .delete("/shops/locations")
-      .query({ name: shopTwo.name })
-      .send({ locations: locationTwoId })
-      .set({ Authorization: `Bearer ${regularUserToken}` })
-      .expect(401);
-
-    const location = await Location.findById(locationTwoId);
-    expect(location).not.to.be.null;
-
-    const shop = await Shop.findById(shopTwoId);
-    expect(shop?.locations).to.include(locationTwoId);
-  });
-
-  it("allows a user with the admin role to delete the location of a shop", async () => {
-    await request(app)
-      .delete("/shops/locations")
-      .query({ name: shopTwo.name })
-      .send({ locations: [locationTwoId] })
-      .set({ Authorization: `Bearer ${adminUserToken}` })
-      .expect(200);
-
-    const location = await Location.findById(locationTwoId);
-    expect(location).to.be.null;
-
-    const shop = await Shop.findById(shopTwoId);
-    expect(shop?.locations).to.not.include(locationTwoId);
   });
 });
 

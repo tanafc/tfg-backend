@@ -29,7 +29,7 @@ shopRouter.get("/shops", authenticateToken, async (req, res) => {
     }
 
     await shop.populate("products", "-_id name barcode brand");
-    await shop.populate("locations", "-shop");
+    await shop.populate("location", "-shop");
 
     return res.send(shop);
   } catch (error) {
@@ -46,7 +46,7 @@ shopRouter.get("/shops/:id", authenticateToken, async (req, res) => {
     }
 
     await shop.populate("products", "-_id name barcode brand");
-    await shop.populate("locations", "-shop");
+    await shop.populate("location", "-shop");
 
     return res.send(shop);
   } catch (error) {
@@ -60,7 +60,7 @@ shopRouter.get("/shops-all", authenticateToken, async (req, res) => {
   try {
     const shops = await Shop.find(
       { name: { $regex: filter, $options: "i" } },
-      "name locations"
+      "name location"
     );
 
     return res.send({ shops: shops });
@@ -97,49 +97,13 @@ shopRouter.post("/shops", authenticateToken, async (req, res) => {
     const newShop = new Shop({
       _id: newShopId,
       name: req.body.name,
-      locations: [newLocation._id],
+      location: newLocation._id,
     });
 
     await newLocation.save();
     await newShop.save();
 
     return res.status(201).send(newShop);
-  } catch (error) {
-    return res.status(400).send(error);
-  }
-});
-
-shopRouter.post("/shops/locations", authenticateToken, async (req, res) => {
-  const filter = req.query.name
-    ? { name: req.query.name.toString() }
-    : undefined;
-
-  if (!filter) {
-    return res.status(400).send({
-      error: "The name of the shop needs to be provided",
-    });
-  }
-
-  try {
-    const shop = await Shop.findOne(filter);
-
-    if (!shop) {
-      return res.status(404).send({
-        error: `No shop with name ${req.body.name} was found`,
-      });
-    }
-
-    const location = new Location({
-      ...req.body,
-      shop: shop._id,
-    });
-
-    shop.locations.push(location._id);
-
-    await shop.save();
-    await location.save();
-
-    return res.status(201).send(location);
   } catch (error) {
     return res.status(400).send(error);
   }
@@ -179,6 +143,7 @@ shopRouter.post("/shops/products", authenticateToken, async (req, res) => {
       product: product._id,
       shop: shop._id,
       user: user._id,
+      date: Date.now()
     });
 
     await receipt.save();
@@ -210,57 +175,8 @@ shopRouter.delete(
         return res.status(404).send();
       }
 
-      await Location.deleteMany({ _id: { $in: shop.locations } });
+      await Location.findByIdAndDelete(shop.location);
       await Receipt.deleteMany({ shop: shop._id });
-
-      return res.send(shop);
-    } catch (error) {
-      return res.status(400).send();
-    }
-  }
-);
-
-shopRouter.delete(
-  "/shops/locations",
-  authenticateToken,
-  authenticateRole(ROLE.ADMIN),
-  async (req, res) => {
-    const filter = req.query.name
-      ? { name: req.query.name.toString() }
-      : undefined;
-
-    if (!filter) {
-      return res.status(400).send({
-        error: "A name for a shop needs to be provided",
-      });
-    }
-
-    if (!req.body.locations) {
-      return res.status(400).send({
-        error: "Ids of locations needs to be provided",
-      });
-    }
-
-    try {
-      const locations: Types.ObjectId[] = req.body.locations;
-
-      const shop = await Shop.findOne(filter);
-
-      if (!shop) {
-        return res.status(404).send();
-      }
-
-      if (!locations.every((location) => shop.locations.includes(location))) {
-        return res
-          .status(404)
-          .send({ error: "Some locations do not match the shop." });
-      }
-
-      await shop.updateOne({
-        $pullAll: { locations: locations },
-      });
-
-      await Location.deleteMany({ _id: { $in: locations } });
 
       return res.send(shop);
     } catch (error) {

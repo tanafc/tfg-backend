@@ -3,7 +3,7 @@ import { Schema, Types, model } from "mongoose";
 interface ShopInterface {
   name: string;
   products: Types.ObjectId[];
-  locations: Types.ObjectId[];
+  location: Types.ObjectId;
 }
 
 const ShopSchema = new Schema<ShopInterface>({
@@ -19,12 +19,10 @@ const ShopSchema = new Schema<ShopInterface>({
       ref: "Product",
     },
   ],
-  locations: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "Location",
-    },
-  ],
+  location: {
+    type: Schema.Types.ObjectId,
+    ref: "Location",
+  },
 });
 
 export const Shop = model<ShopInterface>("Shop", ShopSchema);

@@ -3,8 +3,8 @@ import { authenticateToken } from "../middleware/authJwt";
 import { authenticateRole } from "../middleware/authRole";
 import { Product } from "../models/product";
 import { Receipt } from "../models/receipt";
-import { Shop } from "../models/shop";
 import ROLE from "../models/role";
+import { Shop } from "../models/shop";
 
 export const receiptRouter = express.Router();
 
@@ -16,10 +16,59 @@ receiptRouter.get("/receipts/:id", authenticateToken, async (req, res) => {
       return res.status(404).send();
     }
 
-    await receipt.populate("shop", "name");
+    await receipt.populate({
+      path: "shop",
+      populate: [
+        { path: "name" },
+        { path: "location", select: "-_id latitude longitude" },
+      ],
+    });
     await receipt.populate("product", "name barcode");
 
     return res.send(receipt);
+  } catch (error) {
+    return res.status(400).send();
+  }
+});
+
+receiptRouter.get("/newest-receipts", authenticateToken, async (req, res) => {
+  const filter = req.query.product
+    ? { barcode: req.query.product.toString() }
+    : undefined;
+
+  if (!filter) {
+    res
+      .status(400)
+      .send({ error: "A barcode for a product needs to be provided" });
+  }
+
+  try {
+    const product = await Product.findOne(filter);
+
+    if (!product) {
+      return res.status(404).send();
+    }
+
+    const shops = await Shop.find({});
+
+    const shopReceipts = await Promise.all(
+      shops.map((shop) =>
+        Receipt.findOne({ product: product._id, shop: shop._id })
+          .sort("-_id")
+          .populate({
+            path: "shop",
+            populate: [
+              { path: "name" },
+              { path: "location", select: "-_id latitude longitude" },
+            ],
+          })
+          .populate("product", "name barcode")
+      )
+    );
+
+    const newestReceipts = shopReceipts.filter((receipt) => receipt != null);
+
+    return res.send({ receipts: newestReceipts });
   } catch (error) {
     return res.status(400).send();
   }
@@ -65,7 +114,13 @@ receiptRouter.get("/receipts", authenticateToken, async (req, res) => {
       .sort("-date")
       .limit(limit)
       .skip(skip)
-      .populate("shop", "name")
+      .populate({
+        path: "shop",
+        populate: [
+          { path: "name" },
+          { path: "location", select: "-_id latitude longitude" },
+        ],
+      })
       .populate("product", "name barcode");
 
     return res.send({ receipts });
@@ -142,7 +197,13 @@ receiptRouter.delete(
   async (req, res) => {
     try {
       const receipt = await Receipt.findByIdAndDelete(req.params.id)
-        .populate("shop", "name")
+        .populate({
+          path: "shop",
+          populate: [
+            { path: "name" },
+            { path: "location", select: "-_id latitude longitude" },
+          ],
+        })
         .populate("product", "name barcode");
 
       if (!receipt) {

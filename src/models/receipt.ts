@@ -15,7 +15,6 @@ const ReceiptSchema = new Schema<ReceiptInterface>({
   },
   date: {
     type: Date,
-    default: Date.now(),
     required: [true, "A date is required"],
   },
   product: {

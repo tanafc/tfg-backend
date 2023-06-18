@@ -59,7 +59,6 @@ const NutrientsSchema = new Schema<NutrientsInterface>({
   },
   salt: {
     type: Number,
-    required: true,
   },
   sodium: {
     type: Number,

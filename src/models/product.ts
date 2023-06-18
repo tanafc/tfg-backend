@@ -16,7 +16,7 @@ const ProductSchema = new Schema<ProductInterface>({
     type: String,
     unique: true,
     required: [true, "A barcode is required"],
-    match: [/^(?=.*0)[0-9]{12}$/, "Please, enter a valid UCP-A barcode"],
+    // match: [/^(?=.*0)[0-9]{12,13}$/, "Please, enter a valid UPC or EAN barcode"],
     trim: true,
   },
   name: {

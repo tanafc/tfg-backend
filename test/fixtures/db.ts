@@ -38,7 +38,6 @@ export const regularUser = {
   email: "test@test.es",
   password: hashPassword("Testtest1"),
   role: "regular",
-  receipts: [receiptOfProductOneId],
 };
 
 export const adminUser = {
@@ -47,7 +46,6 @@ export const adminUser = {
   email: "test@test.es",
   password: hashPassword("Testtest1"),
   role: "admin",
-  receipts: [receiptOfProductTwoId, receiptOfProductThreeId],
 };
 
 export const locationOne = {
@@ -69,14 +67,14 @@ export const locationTwo = {
 export const shopOne = {
   _id: shopOneId,
   name: "Carrefour",
-  locations: [locationOne],
+  location: locationOne,
   products: [productOneId],
 };
 
 export const shopTwo = {
   _id: shopTwoId,
   name: "Alcampo",
-  locations: [locationTwo],
+  location: locationTwo,
   products: [productTwoId, productThreeId],
 };
 

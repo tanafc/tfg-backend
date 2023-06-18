@@ -2,8 +2,11 @@ import { expect } from "chai";
 import * as request from "supertest";
 import app from "../src/app";
 import "../src/database/mongoose";
+import { Receipt } from "../src/models/receipt";
 import {
   adminUserToken,
+  locationOne,
+  locationTwo,
   productOne,
   productOneId,
   productThree,
@@ -18,7 +21,6 @@ import {
   shopTwo,
   shopTwoId,
 } from "./fixtures/db";
-import { Receipt } from "../src/models/receipt";
 
 describe("GET /receipts/:id", () => {
   it("gets a receipt by its id", async () => {
@@ -35,6 +37,11 @@ describe("GET /receipts/:id", () => {
     expect(response.body.shop).to.include({
       _id: shopOneId.toString(),
       name: shopOne.name,
+    });
+
+    expect(response.body.shop.location).to.include({
+      latitude: locationOne.latitude,
+      longitude: locationOne.longitude,
     });
 
     expect(response.body.product).to.include({
@@ -68,6 +75,11 @@ describe("GET /receipts", () => {
     expect(response.body.receipts[0].shop).to.include({
       name: "Alcampo",
     });
+
+    expect(response.body.receipts[0].shop.location).to.include({
+      latitude: 8,
+      longitude: 8,
+    });
   });
 
   it("gets the receipts of products in a single shop", async () => {
@@ -93,6 +105,11 @@ describe("GET /receipts", () => {
       name: "Alcampo",
     });
 
+    expect(response.body.receipts[0].shop.location).to.include({
+      latitude: 8,
+      longitude: 8,
+    });
+
     expect(response.body.receipts[1]).to.include({
       price: 2.1,
       date: "2023-05-12T13:40:29.431Z",
@@ -105,6 +122,11 @@ describe("GET /receipts", () => {
 
     expect(response.body.receipts[1].shop).to.include({
       name: "Alcampo",
+    });
+
+    expect(response.body.receipts[1].shop.location).to.include({
+      latitude: 8,
+      longitude: 8,
     });
   });
 
@@ -130,6 +152,11 @@ describe("GET /receipts", () => {
     expect(response.body.receipts[0].shop).to.include({
       _id: shopOneId.toString(),
       name: "Carrefour",
+    });
+
+    expect(response.body.receipts[0].shop.location).to.include({
+      latitude: 9,
+      longitude: 10,
     });
   });
 
@@ -158,6 +185,11 @@ describe("GET /receipts", () => {
       name: shopTwo.name,
     });
 
+    expect(response.body.receipts[0].shop.location).to.include({
+      latitude: locationTwo.latitude,
+      longitude: locationTwo.longitude,
+    });
+
     expect(response.body.receipts[1]).to.include({
       price: 3.4,
       date: "2023-04-12T13:40:29.431Z",
@@ -172,6 +204,11 @@ describe("GET /receipts", () => {
     expect(response.body.receipts[1].shop).to.include({
       _id: shopOneId.toString(),
       name: shopOne.name,
+    });
+
+    expect(response.body.receipts[1].shop.location).to.include({
+      latitude: locationOne.latitude,
+      longitude: locationOne.longitude,
     });
   });
 
@@ -209,6 +246,48 @@ describe("GET /receipts", () => {
     expect(response.body.receipts.length).to.equal(2);
     expect(response.body.receipts[0]._id).to.include(receiptOfProductThreeId);
     expect(response.body.receipts[1]._id).to.include(receiptOfProductTwoId);
+  });
+});
+
+describe("GET /newest-receipts", () => {
+  it("gets the newest receipts of a product in all the shops available", async () => {
+    await request(app)
+      .post("/shops/products")
+      .query({ name: shopOne.name })
+      .send({ barcode: productOne.barcode, price: 4 })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(201);
+
+    await request(app)
+      .post("/shops/products")
+      .query({ name: shopTwo.name })
+      .send({ barcode: productOne.barcode, price: 2 })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(201);
+
+    const response = await request(app)
+      .get("/newest-receipts")
+      .query({ product: productOne.barcode })
+      .set({ Authorization: `Bearer ${regularUserToken}` })
+      .expect(200);
+
+    expect(response.body.receipts.length).to.equal(2);
+
+    expect(response.body.receipts[0]).to.include({
+      price: 4,
+    });
+
+    expect(response.body.receipts[0].shop).to.include({
+      name: shopOne.name,
+    });
+
+    expect(response.body.receipts[1]).to.include({
+      price: 2,
+    });
+
+    expect(response.body.receipts[1].shop).to.include({
+      name: shopTwo.name,
+    });
   });
 });
 

@@ -3,7 +3,7 @@
 ## Desarrollo de API REST
 API REST para la geolocalización de productos alimenticios.
 
-## Despliegue
+## Ejecución
 Para la ejecución en local:
 ```
 npm install

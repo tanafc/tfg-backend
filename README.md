@@ -17,4 +17,4 @@ npm test
 ```
 
 ## Autor
-Tanausú - @tanafc
+Tanausú - [@tanafc](https://github.com/tanafc)
